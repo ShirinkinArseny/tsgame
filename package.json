@@ -4,8 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc src/index.ts --module esnext --target esnext --outDir build/ts && rollup build/ts/index.js --file build/bundle.js --format iife",
+
+
+
+    "serve": "ws --spa assets/index.html",
+    "watch": "tsc src/index.ts --watch --module esnext --target esnext --outDir build/ts/ && rollup build/ts/index.js --watch --file build/bundle.js --format iife",
+    "browser": "open-cli http://localhost:8000",
+    "start": "npm-run-all --parallel watch serve browser"
   },
   "author": "",
-  "license": "ISC"
+  "license": "WTFPL",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "local-web-server": "^5.1.1",
+    "open-cli": "^7.0.1",
+    "rollup": "^2.63.0",
+    "typescript": "^4.5.4",
+    "npm-run-all": "^4.1.5"
+  }
 }
