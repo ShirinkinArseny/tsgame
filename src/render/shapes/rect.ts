@@ -1,11 +1,20 @@
 import {Destroyable} from "../utils/destroyable";
 
+export const drawRect = (gl: WebGLRenderingContext) => {
+    gl.drawElements(
+        gl.TRIANGLES,
+        6,
+        gl.UNSIGNED_SHORT,
+        0,
+    );
+}
+
+
 export class Rect implements Destroyable {
 
     private readonly gl: WebGLRenderingContext;
     indices: WebGLBuffer;
     position: WebGLBuffer;
-    indicesCount: number;
 
     constructor(
         gl: WebGLRenderingContext,
@@ -18,7 +27,6 @@ export class Rect implements Destroyable {
         const indices = [
             0, 2, 3, 0, 1, 2,
         ];
-        this.indicesCount = indices.length;
         const positions = [
             x0, y0,
             x1, y0,
@@ -67,15 +75,6 @@ export class Rect implements Destroyable {
                 this.indices,
             );
         }
-    }
-
-    draw() {
-        this.gl.drawElements(
-            this.gl.TRIANGLES,
-            this.indicesCount,
-            this.gl.UNSIGNED_SHORT,
-            0,
-        );
     }
 
     destroy() {

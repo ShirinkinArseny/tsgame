@@ -71,8 +71,8 @@ export class FBO extends Texture {
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
-    destroy(gl: WebGLRenderingContext) {
-        gl.deleteTexture(this.targetTexture);
+    destroy() {
+        this.gl.deleteTexture(this.targetTexture);
     }
 
 }

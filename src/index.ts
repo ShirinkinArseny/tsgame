@@ -1,4 +1,3 @@
-import {ImageTexture} from "./render/textures/imageTexture";
 import {playground} from "./playground";
 import {Scene} from "./scene";
 
@@ -35,10 +34,14 @@ function main() {
         }
         let init = Promise.resolve();
         if (scene !== prevScene) {
+            console.log("Swapping scenes: " + prevScene?.name + " -> " + scene.name)
             if (prevScene) {
                 prevScene.destroy();
+                console.log("Previous scene destroyed: " + prevScene.name)
             }
-            init = scene.init(gl);
+            init = scene.load(gl).then(() => {
+                console.log("New scene loaded: " + scene.name)
+            });
             prevScene = scene;
         }
         init.then(() => {

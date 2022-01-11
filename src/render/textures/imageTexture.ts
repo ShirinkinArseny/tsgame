@@ -12,26 +12,26 @@ export class ImageTexture extends Texture {
         this.url = url;
     }
 
-    load(gl: WebGLRenderingContext) {
-        tryDetectError(gl);
-        gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+    load() {
+        tryDetectError(this.gl);
         const level = 0;
-        const internalFormat = gl.RGBA;
-        const srcFormat = gl.RGBA;
-        const srcType = gl.UNSIGNED_BYTE;
+        const internalFormat = this.gl.RGBA;
+        const srcFormat = this.gl.RGBA;
+        const srcType = this.gl.UNSIGNED_BYTE;
         const image = new Image();
         return new Promise((res, rej) => {
             image.onload = () => {
                 this.width = image.width;
                 this.height = image.height;
-                gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                this.gl.bindTexture(this.gl.TEXTURE_2D, this.targetTexture);
+                this.gl.texImage2D(this.gl.TEXTURE_2D, level, internalFormat,
                     srcFormat, srcType, image);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
-                    gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER,
-                    gl.NEAREST);
-                gl.generateMipmap(gl.TEXTURE_2D);
-                tryDetectError(gl);
+                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER,
+                    this.gl.NEAREST);
+                this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER,
+                    this.gl.NEAREST);
+                this.gl.generateMipmap(this.gl.TEXTURE_2D);
+                tryDetectError(this.gl);
                 res(undefined);
             };
             image.src = this.url;

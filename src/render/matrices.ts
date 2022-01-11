@@ -28,6 +28,7 @@ export function translate(matrix: Mat4, vector: Vec3) {
         matrix[10] * z + matrix[14];
     matrix[15] = matrix[3] * x + matrix[7] * y +
         matrix[11] * z + matrix[15];
+    return matrix;
 }
 
 export function scale(matrix: Mat4, scale: Vec3) {
