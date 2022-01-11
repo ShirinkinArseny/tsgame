@@ -1,10 +1,10 @@
 import {identity, ortho, translate, Vec4} from "./render/matrices";
 import {tryDetectError} from "./render/webgl-demo";
-import {TexturedShader} from "./render/shaders/texturedShader";
 import {drawRect, Rect} from "./render/shapes/rect";
 import {Scene} from "./scene";
 import {ImageTexture} from "./render/textures/imageTexture";
 import {Font, FontStyle} from "./render/font";
+import {LoadableShader} from "./render/shaders/loadableShader";
 
 export const playground: () => Scene = () => {
 
@@ -16,7 +16,7 @@ export const playground: () => Scene = () => {
 
     }
 
-    let texturedShader: TexturedShader
+    let texturedShader: LoadableShader
     let rect1: Rect
     let rect2: Rect
     let texture: ImageTexture
@@ -24,24 +24,25 @@ export const playground: () => Scene = () => {
 
     let fps = 0;
 
-    const text = "Значимость этих проблем настолько очевидна, что рамки и место обучения кадров в значительной степени обуславливает создание существенных финансовых и административных условий. Задача организации, в особенности же сложившаяся структура организации влечет за собой процесс внедрения и модернизации направлений прогрессивного развития. Не следует, однако забывать, что рамки и место обучения кадров требуют от нас анализа существенных финансовых и административных условий.".split(" ").map(word => ({
+    const text = "Значимость этих проблем настолько очевидна, что рамки и место обучения кадров в значительной степени обуславливает создание существенных финансовых и административных условий. Задача организации, в особенности же сложившаяся структура организации влечет за собой процесс внедрения и модернизации направлений прогрессивного развития. Не следует, однако забывать, что рамки и место обучения кадров требуют от нас анализа существенных финансовых и административных условий.".split(" ").map((word, idx) => ({
         word: word,
-        fontStyle: word[0] > "P" ? FontStyle.NORMAL : FontStyle.BOLD
+        fontStyle: idx % 2 === 0 ? FontStyle.NORMAL : FontStyle.BOLD
     }))
 
     return {
         name: "Playground",
         load(gl: WebGLRenderingContext) {
-            texturedShader = new TexturedShader(gl);
+            texturedShader = new LoadableShader(gl, "textured");
             tryDetectError(gl);
             rect1 = new Rect(gl);
             rect2 = new Rect(gl, 0, 0, 0.7, 0.7)
-            texture = new ImageTexture(gl, "/assets/images/sample.png");
+            texture = new ImageTexture(gl, "sample.png");
             font = new Font(gl);
             tryDetectError(gl);
             return Promise.all([
                 texture.load(),
-                font.load()
+                font.load(),
+                texturedShader.load()
             ])
         },
         destroy() {
@@ -105,10 +106,10 @@ export const playground: () => Scene = () => {
             const viewport: Vec4 = [-ww, ww, hh, -hh]
 
             const r = (new Date().getTime() % 5000) / 5000 * Math.PI * 2
-            const d = 1; //Math.sin(r) + 1.6
+            const d = 1; //Math.sin(r) * 0.2 + 1.2
 
-            font.drawString("Hello world! fps: " + fps, -15, -10, viewport)
-            font.drawText(text, -15, -5, 40, viewport, d)
+            font.drawString("Hello world! fps: " + fps, -15, -7, FontStyle.BOLD, [1.0, 0.0, 0.0], viewport)
+            font.drawText(text, -15, -5, 40, [0.0, 0.0, 0.3], viewport, d, 1 / d)
 
 
         }

@@ -9,7 +9,7 @@ export class ImageTexture extends Texture {
 
     constructor(gl: WebGLRenderingContext, url: string) {
         super(gl, gl.createTexture());
-        this.url = url;
+        this.url = "/assets/images/"+url;
     }
 
     load(): Promise<HTMLImageElement> {

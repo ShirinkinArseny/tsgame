@@ -1,5 +1,5 @@
-import  { SimpleCache } from '../utils/cache';
-import  { Mat4, Vec3, Vec4 } from '../matrices';
+import {SimpleCache} from '../utils/cache';
+import {Mat4, Vec3, Vec4} from '../matrices';
 import {Destroyable} from "../utils/destroyable";
 
 export class Shader implements Destroyable {
@@ -21,44 +21,57 @@ export class Shader implements Destroyable {
         return shader;
     }
 
-    private readonly vertexShader: WebGLShader;
-    private readonly fragmentShader: WebGLShader;
-    private readonly program: WebGLProgram;
-    private readonly attributesCache: SimpleCache<number>;
-    private readonly uniformsCache: SimpleCache<WebGLUniformLocation>;
+    private readonly vertexPromise: Promise<string>;
+    private readonly fragmentPromise: Promise<string>;
+    private vertexShader: WebGLShader;
+    private fragmentShader: WebGLShader;
+    private program: WebGLProgram;
+    private attributesCache: SimpleCache<number>;
+    private uniformsCache: SimpleCache<WebGLUniformLocation>;
+    private gl: WebGLRenderingContext;
 
     constructor(
-        private readonly gl: WebGLRenderingContext,
-        private readonly vertexSource: string,
-        private readonly fragmentSource: string,
+        gl: WebGLRenderingContext,
+        vertex: Promise<string>,
+        fragment: Promise<string>,
     ) {
         this.gl = gl;
-        this.vertexShader = this.loadShader(
-            gl.VERTEX_SHADER,
-            vertexSource,
-        );
-        this.fragmentShader = this.loadShader(
-            gl.FRAGMENT_SHADER,
-            fragmentSource,
-        );
+        this.vertexPromise = vertex;
+        this.fragmentPromise = fragment;
+    }
 
-        this.program = gl.createProgram();
-        gl.attachShader(this.program, this.vertexShader);
-        gl.attachShader(this.program, this.fragmentShader);
-        gl.linkProgram(this.program);
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            throw new Error(
-                `Unable to initialize the shader program: ` +
-                gl.getProgramInfoLog(this.program),
+    load(): Promise<void> {
+        return Promise.all([
+            this.vertexPromise,
+            this.fragmentPromise
+        ]).then(([vertexSource, fragmentSource]) => {
+            this.vertexShader = this.loadShader(
+                this.gl.VERTEX_SHADER,
+                vertexSource,
             );
-        }
+            this.fragmentShader = this.loadShader(
+                this.gl.FRAGMENT_SHADER,
+                fragmentSource,
+            );
 
-        this.attributesCache = new SimpleCache((name) =>
-            this.gl.getAttribLocation(this.program, name),
-        );
-        this.uniformsCache = new SimpleCache((name) =>
-            this.gl.getUniformLocation(this.program, name),
-        );
+            this.program = this.gl.createProgram();
+            this.gl.attachShader(this.program, this.vertexShader);
+            this.gl.attachShader(this.program, this.fragmentShader);
+            this.gl.linkProgram(this.program);
+            if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+                throw new Error(
+                    `Unable to initialize the shader program: ` +
+                    this.gl.getProgramInfoLog(this.program),
+                );
+            }
+
+            this.attributesCache = new SimpleCache((name) =>
+                this.gl.getAttribLocation(this.program, name),
+            );
+            this.uniformsCache = new SimpleCache((name) =>
+                this.gl.getUniformLocation(this.program, name),
+            );
+        })
     }
 
     destroy() {
@@ -73,6 +86,7 @@ export class Shader implements Destroyable {
 
     useProgram() {
         this.gl.useProgram(this.program);
+        this.set1i('texture', 0);
     }
 
     setMatrix(
@@ -89,9 +103,11 @@ export class Shader implements Destroyable {
     setVector4f(name: string, value: Vec4) {
         this.gl.uniform4fv(this.uniformsCache.get(name), value);
     }
+
     setVector3f(name: string, value: Vec3) {
         this.gl.uniform3fv(this.uniformsCache.get(name), value);
     }
+
     set1i(name: string, value: number) {
         this.gl.uniform1i(this.uniformsCache.get(name), value);
     }
