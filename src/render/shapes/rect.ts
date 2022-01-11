@@ -1,23 +1,31 @@
-export class Rect {
+import {Destroyable} from "../utils/destroyable";
+
+export class Rect implements Destroyable {
 
     private readonly gl: WebGLRenderingContext;
     indices: WebGLBuffer;
     position: WebGLBuffer;
     indicesCount: number;
 
-    constructor(gl: WebGLRenderingContext) {
+    constructor(
+        gl: WebGLRenderingContext,
+        x0 = 0.0,
+        y0 = 0.0,
+        x1 = 1.0,
+        y1 = 1.0
+    ) {
         this.gl = gl;
         const indices = [
             0, 2, 3, 0, 1, 2,
         ];
         this.indicesCount = indices.length;
         const positions = [
-            0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0,
-            1.0, 1.0, 0.0,
-            0.0, 1.0, 0.0,
+            x0, y0,
+            x1, y0,
+            x1, y1,
+            x0, y1,
         ];
-        
+
         this.position = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.position);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(
@@ -31,10 +39,10 @@ export class Rect {
     }
 
     bind(
-        vertexPositionAttribute: number,
+        vertexPositionAttribute: number
     ) {
         {
-            const numComponents = 3;
+            const numComponents = 2;
             const type = this.gl.FLOAT;
             const normalize = false;
             const stride = 0;
@@ -55,7 +63,7 @@ export class Rect {
         }
         {
             this.gl.bindBuffer(
-                this.gl.ELEMENT_ARRAY_BUFFER, 
+                this.gl.ELEMENT_ARRAY_BUFFER,
                 this.indices,
             );
         }
@@ -68,6 +76,11 @@ export class Rect {
             this.gl.UNSIGNED_SHORT,
             0,
         );
+    }
+
+    destroy() {
+        this.gl.deleteBuffer(this.indices);
+        this.gl.deleteBuffer(this.position)
     }
 
 }

@@ -1,11 +1,9 @@
+import {Destroyable} from "./render/utils/destroyable";
 
 
+export interface Scene extends Destroyable {
 
-export interface Scene {
-
-    init(gl: WebGLRenderingContext): Promise<void>
-
-    destroy(gl: WebGLRenderingContext)
+    init(gl: WebGLRenderingContext): Promise<any>
 
     update(dt: number, pressedKeyMap: Map<number, boolean>, changeScene: (Scene) => void)
 

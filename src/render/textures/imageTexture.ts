@@ -38,8 +38,8 @@ export class ImageTexture extends Texture {
         })
     }
 
-    destroy(gl: WebGLRenderingContext) {
-        gl.deleteTexture(this.targetTexture);
+    destroy() {
+        this.gl.deleteTexture(this.targetTexture);
     }
 
 }

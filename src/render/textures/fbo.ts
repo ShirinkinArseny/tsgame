@@ -31,7 +31,6 @@ export class FBO extends Texture {
             width, height, border,
                         format, type, data);
 
-        // set the filtering so we don't need mips
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
             gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER,

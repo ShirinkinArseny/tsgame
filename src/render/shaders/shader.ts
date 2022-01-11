@@ -61,10 +61,10 @@ export class Shader implements Destroyable {
         );
     }
 
-    destroy(gl: WebGLRenderingContext) {
-        gl.deleteProgram(this.program);
-        gl.deleteShader(this.vertexShader);
-        gl.deleteShader(this.fragmentShader);
+    destroy() {
+        this.gl.deleteProgram(this.program);
+        this.gl.deleteShader(this.vertexShader);
+        this.gl.deleteShader(this.fragmentShader);
     }
 
     getAttribute(name: string): number {
@@ -77,7 +77,7 @@ export class Shader implements Destroyable {
 
     setMatrix(
         name: string,
-        value: Mat4, /* TODO: strict type */
+        value: Mat4,
     ) {
         this.gl.uniformMatrix4fv(
             this.uniformsCache.get(name),

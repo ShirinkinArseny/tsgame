@@ -2,8 +2,6 @@ import {ImageTexture} from "./render/textures/imageTexture";
 import {playground} from "./playground";
 import {Scene} from "./scene";
 
-export let texture: ImageTexture
-
 let prevScene: Scene | undefined = undefined
 let scene: Scene = playground()
 
@@ -15,8 +13,6 @@ function main() {
         alert('Unable to initialize WebGL. Your browser or machine may not support it.');
         return;
     }
-
-    texture = new ImageTexture(gl, "/assets/sample.png");
 
     const pressedKeysMap = new Map<number, boolean>();
     document.addEventListener('keydown', event => {
@@ -40,7 +36,7 @@ function main() {
         let init = Promise.resolve();
         if (scene !== prevScene) {
             if (prevScene) {
-                prevScene.destroy(gl);
+                prevScene.destroy();
             }
             init = scene.init(gl);
             prevScene = scene;
@@ -59,13 +55,7 @@ function main() {
         })
     }
 
-
-    Promise.all([
-        texture.load(gl)
-    ])
-        .then(() => {
-            render();
-        })
+    render();
 
 }
 

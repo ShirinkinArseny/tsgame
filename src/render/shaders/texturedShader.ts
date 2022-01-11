@@ -7,6 +7,7 @@ export class TexturedShader extends Shader {
             gl,
             `
             attribute vec4 aVertexPosition;
+            attribute vec2 aTexturePosition;
 
             uniform mat4 u_matrix;
 
@@ -14,7 +15,7 @@ export class TexturedShader extends Shader {
 
             void main() {
               gl_Position = u_matrix * aVertexPosition;
-              v_texcoord = aVertexPosition.xy;
+              v_texcoord = aTexturePosition;
             }
           `,
           `

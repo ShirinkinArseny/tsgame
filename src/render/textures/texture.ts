@@ -15,6 +15,6 @@ export abstract class Texture implements Destroyable {
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.targetTexture);
     }
 
-    abstract destroy(gl: WebGLRenderingContext);
+    abstract destroy();
 
 }
