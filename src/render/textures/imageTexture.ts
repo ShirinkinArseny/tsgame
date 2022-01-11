@@ -12,7 +12,7 @@ export class ImageTexture extends Texture {
         this.url = url;
     }
 
-    load() {
+    load(): Promise<HTMLImageElement> {
         tryDetectError(this.gl);
         const level = 0;
         const internalFormat = this.gl.RGBA;
@@ -32,7 +32,7 @@ export class ImageTexture extends Texture {
                     this.gl.NEAREST);
                 this.gl.generateMipmap(this.gl.TEXTURE_2D);
                 tryDetectError(this.gl);
-                res(undefined);
+                res(image);
             };
             image.src = this.url;
         })

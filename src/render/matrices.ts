@@ -7,6 +7,8 @@ export type Mat4 = [
 export type Vec3 = [number, number, number];
 export type Vec4 = [number, number, number, number];
 
+
+
 export function identity(): Mat4 {
     return [
         1, 0, 0, 0,
@@ -47,6 +49,7 @@ export function scale(matrix: Mat4, scale: Vec3) {
     matrix[9] *= z;
     matrix[10] *= z;
     matrix[11] *= z;
+    return matrix;
 }
 
 export function rotate(matrix: Mat4, rad: number, axis: Vec3) {

@@ -1,4 +1,4 @@
-import  { Shader } from './shader';
+import {Shader} from './shader';
 
 export class TexturedShader extends Shader {
 
@@ -19,7 +19,7 @@ export class TexturedShader extends Shader {
               v_texcoord = aTexturePosition;
             }
           `,
-          `
+            `
           precision mediump float;
 
           // Passed in from the vertex shader.
@@ -33,6 +33,11 @@ export class TexturedShader extends Shader {
           }
         `,
         );
+    }
+
+    override useProgram() {
+        super.useProgram();
+        this.set1i('u_texture', 0);
     }
 
 }

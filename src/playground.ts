@@ -1,10 +1,10 @@
-import {identity, ortho, translate} from "./render/matrices";
+import {identity, ortho, translate, Vec4} from "./render/matrices";
 import {tryDetectError} from "./render/webgl-demo";
 import {TexturedShader} from "./render/shaders/texturedShader";
 import {drawRect, Rect} from "./render/shapes/rect";
 import {Scene} from "./scene";
 import {ImageTexture} from "./render/textures/imageTexture";
-import {Font} from "./render/font";
+import {Font, FontStyle} from "./render/font";
 
 export const playground: () => Scene = () => {
 
@@ -24,6 +24,11 @@ export const playground: () => Scene = () => {
 
     let fps = 0;
 
+    const text = "Значимость этих проблем настолько очевидна, что рамки и место обучения кадров в значительной степени обуславливает создание существенных финансовых и административных условий. Задача организации, в особенности же сложившаяся структура организации влечет за собой процесс внедрения и модернизации направлений прогрессивного развития. Не следует, однако забывать, что рамки и место обучения кадров требуют от нас анализа существенных финансовых и административных условий.".split(" ").map(word => ({
+        word: word,
+        fontStyle: word[0] > "P" ? FontStyle.NORMAL : FontStyle.BOLD
+    }))
+
     return {
         name: "Playground",
         load(gl: WebGLRenderingContext) {
@@ -31,7 +36,7 @@ export const playground: () => Scene = () => {
             tryDetectError(gl);
             rect1 = new Rect(gl);
             rect2 = new Rect(gl, 0, 0, 0.7, 0.7)
-            texture = new ImageTexture(gl, "/assets/sample.png");
+            texture = new ImageTexture(gl, "/assets/images/sample.png");
             font = new Font(gl);
             tryDetectError(gl);
             return Promise.all([
@@ -48,7 +53,7 @@ export const playground: () => Scene = () => {
         update: (dt: Number, pressedKeyMap: Map<number, boolean>) => {
             handleKeyboard(pressedKeyMap);
         },
-        render(gl: WebGLRenderingContext, dt: number) {
+        render(gl: WebGLRenderingContext, w: number, h: number, dt: number) {
 
 
             gl.viewport(
@@ -57,10 +62,11 @@ export const playground: () => Scene = () => {
             );
             gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
+            gl.enable(gl.BLEND)
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
             texturedShader.useProgram();
-            texturedShader.set1i('u_texture', 0);
             texture.bindTexture();
 
             texturedShader.setMatrix(
@@ -89,10 +95,20 @@ export const playground: () => Scene = () => {
             rect2.bind(texturedShader.getAttribute('aTexturePosition'));
             drawRect(gl);
 
-            const now  = 1 / dt;
-            fps = 0.998 * fps + 0.002 * now;
+            const now = 1 / dt;
+            fps = 0.99 * fps + 0.01 * now;
 
-            font.drawText("Hello world! fps: "+fps, -10, 0)
+            const scale = 10;
+            const ww = w / h * scale
+            const hh = scale
+
+            const viewport: Vec4 = [-ww, ww, hh, -hh]
+
+            const r = (new Date().getTime() % 5000) / 5000 * Math.PI * 2
+            const d = 1; //Math.sin(r) + 1.6
+
+            font.drawString("Hello world! fps: " + fps, -15, -10, viewport)
+            font.drawText(text, -15, -5, 40, viewport, d)
 
 
         }

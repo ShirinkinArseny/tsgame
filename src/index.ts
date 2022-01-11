@@ -51,7 +51,7 @@ function main() {
             scene.update(diff, pressedKeysMap, (s: Scene) => {
                 scene = s;
             })
-            scene.render(gl, diff);
+            scene.render(gl, displayWidth, displayHeight, diff);
             requestAnimationFrame(() => {
                 render();
             })

@@ -9,6 +9,6 @@ export interface Scene extends Destroyable {
 
     update(dt: number, pressedKeyMap: Map<number, boolean>, changeScene: (Scene) => void)
 
-    render(gl: WebGLRenderingContext, dt: number)
+    render(gl: WebGLRenderingContext, w: number, h: number, dt: number)
 
 }
