@@ -5,11 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc src/index.ts --module esnext --target esnext --outDir build/ts && rollup build/ts/index.js --file build/bundle.js --format iife",
-
-
-
     "serve": "ws --spa assets/index.html",
-    "watch": "tsc src/index.ts --watch --module esnext --target esnext --outDir build/ts/ && rollup build/ts/index.js --watch --file build/bundle.js --format iife",
+    "watch": "npm-run-all --parallel watch:*",
+    "watch:build": "tsc src/index.ts --watch --module esnext --target esnext --outDir build/ts/", 
+    "watch:bundle": "rollup build/ts/index.js --watch --file build/bundle.js --format iife", 
     "browser": "open-cli http://localhost:8000",
     "start": "npm-run-all --parallel watch serve browser"
   },
