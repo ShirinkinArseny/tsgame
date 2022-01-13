@@ -1,9 +1,11 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
-import {drawRect, Rect} from './shapes/rect';
-import {identity, ortho, scale, translate, Vec3, Vec4} from './matrices';
+import {Rect} from './shapes/rect';
+import {identity, Mat4, ortho, scale, translate, Vec3, Vec4} from './matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
+import {drawTriangles} from './utils/gl';
+import {Loadable} from './utils/loadable';
 
 export enum FontStyle {
 	NORMAL, BOLD
@@ -26,7 +28,7 @@ export type Text = {
 	fontStyle: FontStyle
 }[];
 
-export class Font implements Destroyable {
+export class Font implements Destroyable, Loadable {
 
 	private readonly gl: WebGLRenderingContext;
 	private fontImage: ImageTexture;
@@ -108,7 +110,7 @@ export class Font implements Destroyable {
 		);
 		this.mainRectangle.bind(this.shader.getAttribute('aVertexPosition'));
 		letter[1].bind(this.shader.getAttribute('aTexturePosition'));
-		drawRect(this.gl);
+		drawTriangles(this.gl, this.mainRectangle.indicesCount);
 		return letter[0];
 	}
 
@@ -130,24 +132,24 @@ export class Font implements Destroyable {
 		}
 	}
 
-	private initRenderingText(viewport: Vec4, color: Vec3) {
+	private initRenderingText(projectionMatrix: Mat4, color: Vec3) {
 		this.shader.useProgram();
 		this.shader.setMatrix(
 			'projectionMatrix',
-			ortho(viewport[0], viewport[1], viewport[2], viewport[3], 0.0, 100.0)
+			projectionMatrix
 		);
 		this.shader.setVector3f('color', color);
-		this.fontImage.bindTexture();
+		this.shader.setTexture('texture', this.fontImage);
 	}
 
 	drawString(
 		text: string, x: number, y: number,
 		fontStyle: FontStyle = FontStyle.NORMAL,
 		color: Vec3 = [0, 0, 0],
-		viewport: Vec4,
+		projectionMatrix: Mat4,
 		kerning = 1.0
 	) {
-		this.initRenderingText(viewport, color);
+		this.initRenderingText(projectionMatrix, color);
 		this.doDrawString(text, x, y, kerning, fontStyle);
 	}
 
@@ -155,14 +157,14 @@ export class Font implements Destroyable {
 		text: Text,
 		x: number, y: number, w: number,
 		color: Vec3 = [0, 0, 0],
-		viewport: Vec4,
+		projectionMatrix: Mat4,
 		kerning = 1.0,
 		lineHeight = 1.0
 	) {
 		let xx = x;
 		let yy = y;
 		const x2 = x + w;
-		this.initRenderingText(viewport, color);
+		this.initRenderingText(projectionMatrix, color);
 		text.forEach(({word, fontStyle}) => {
 			const w = this.getStringWidth(word, fontStyle);
 			if (xx + w * kerning >= x + x2) {

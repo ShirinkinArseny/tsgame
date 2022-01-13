@@ -1,8 +1,9 @@
 import {playground} from './playground';
 import {Scene} from './scene';
+import {tryDetectError} from './render/utils/gl';
 
 let prevScene: Scene | undefined = undefined;
-let scene: Scene = playground();
+let scene: Scene;
 
 function main() {
 	const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -14,13 +15,20 @@ function main() {
 	}
 
 	const pressedKeysMap = new Map<number, boolean>();
+	let cursorX = 0;
+	let cursorY = 0;
 	document.addEventListener('keydown', event => {
 		pressedKeysMap[event.keyCode] = true;
 	}, false);
 	document.addEventListener('keyup', event => {
 		pressedKeysMap[event.keyCode] = false;
 	}, false);
+	document.addEventListener('mousemove', event => {
+		cursorX = event.x;
+		cursorY = event.y;
+	});
 
+	scene = playground(gl);
 
 	let prev = new Date().getTime();
 
@@ -39,7 +47,7 @@ function main() {
 				prevScene.destroy();
 				console.log('Previous scene destroyed: ' + prevScene.name);
 			}
-			init = scene.load(gl).then(() => {
+			init = scene.load().then(() => {
 				console.log('New scene loaded: ' + scene.name);
 			});
 			prevScene = scene;
@@ -48,10 +56,11 @@ function main() {
 			const now = new Date().getTime();
 			const diff = (now - prev) / 1000;
 			prev = now;
-			scene.update(diff, pressedKeysMap, (s: Scene) => {
+			scene.update(diff, pressedKeysMap, cursorX / displayWidth, cursorY / displayHeight, (s: Scene) => {
 				scene = s;
 			});
-			scene.render(gl, displayWidth, displayHeight, diff);
+			scene.render(displayWidth, displayHeight, diff);
+			tryDetectError(gl);
 			requestAnimationFrame(() => {
 				render();
 			});

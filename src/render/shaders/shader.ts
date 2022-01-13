@@ -1,8 +1,26 @@
 import {SimpleCache} from '../utils/cache';
 import {Mat4, Vec3, Vec4} from '../matrices';
 import {Destroyable} from '../utils/destroyable';
+import {Loadable} from '../utils/loadable';
+import {Texture} from '../textures/texture';
 
-export class Shader implements Destroyable {
+let bindedShader: Shader | undefined;
+let bindedTextures: { [k: string]: number } = {};
+let bindedTexturesCounter = 0;
+
+const getTextureLayer = (gl: WebGLRenderingContext, index: number) => {
+	if (index === 0) return gl.TEXTURE0;
+	if (index === 1) return gl.TEXTURE1;
+	if (index === 2) return gl.TEXTURE2;
+	if (index === 3) return gl.TEXTURE3;
+	if (index === 4) return gl.TEXTURE4;
+	if (index === 5) return gl.TEXTURE5;
+	if (index === 6) return gl.TEXTURE6;
+	if (index === 7) return gl.TEXTURE7;
+	throw new Error('Do you really need this much textures?');
+};
+
+export class Shader implements Destroyable, Loadable {
 
 	private loadShader(type: number, source: string): WebGLShader {
 		const gl = this.gl;
@@ -86,13 +104,33 @@ export class Shader implements Destroyable {
 
 	useProgram() {
 		this.gl.useProgram(this.program);
-		this.set1i('texture', 0);
+		bindedShader = this;
+		bindedTextures = {};
+		bindedTexturesCounter = -1;
+	}
+
+	private requireBinded() {
+		if (bindedShader !== this) {
+			throw new Error('Trying to use shader while it is not binded');
+		}
+	}
+
+	setTexture(
+		name: string,
+		texture: Texture
+	) {
+		this.requireBinded();
+		const idx = bindedTextures[name] || ++bindedTexturesCounter;
+		this.gl.activeTexture(getTextureLayer(this.gl, idx));
+		this.gl.bindTexture(this.gl.TEXTURE_2D, texture.targetTexture);
+		this.gl.uniform1i(this.uniformsCache.get(name), idx);
 	}
 
 	setMatrix(
 		name: string,
 		value: Mat4,
 	) {
+		this.requireBinded();
 		this.gl.uniformMatrix4fv(
 			this.uniformsCache.get(name),
 			false,
@@ -101,15 +139,23 @@ export class Shader implements Destroyable {
 	}
 
 	setVector4f(name: string, value: Vec4) {
+		this.requireBinded();
 		this.gl.uniform4fv(this.uniformsCache.get(name), value);
 	}
 
 	setVector3f(name: string, value: Vec3) {
+		this.requireBinded();
 		this.gl.uniform3fv(this.uniformsCache.get(name), value);
 	}
 
 	set1i(name: string, value: number) {
+		this.requireBinded();
 		this.gl.uniform1i(this.uniformsCache.get(name), value);
+	}
+
+	set1f(name: string, value: number) {
+		this.requireBinded();
+		this.gl.uniform1f(this.uniformsCache.get(name), value);
 	}
 
 }

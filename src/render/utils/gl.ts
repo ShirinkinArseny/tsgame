@@ -1,4 +1,13 @@
-export function tryDetectError(gl: WebGLRenderingContext) {
+export const drawTriangles = (gl: WebGLRenderingContext, count: number) => {
+	gl.drawElements(
+		gl.TRIANGLES,
+		count,
+		gl.UNSIGNED_SHORT,
+		0,
+	);
+};
+
+export const tryDetectError = (gl: WebGLRenderingContext) => {
 	const errorCode = gl.getError();
 	if (errorCode !== gl.NO_ERROR) {
 		console.error(`GL ERROR OCCURED, CODE=${errorCode}`);
@@ -13,4 +22,4 @@ export function tryDetectError(gl: WebGLRenderingContext) {
 			.map((item) => item[1])
 			.forEach((item) => console.error(`${errorCode} means: ${item}`));
 	}
-}
+};

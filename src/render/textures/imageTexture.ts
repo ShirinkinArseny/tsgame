@@ -1,7 +1,7 @@
 import {Texture} from './texture';
-import {tryDetectError} from '../webgl-demo';
+import {Loadable} from '../utils/loadable';
 
-export class ImageTexture extends Texture {
+export class ImageTexture extends Texture implements Loadable {
 
 	private readonly url: string;
 	public width: number;
@@ -13,7 +13,6 @@ export class ImageTexture extends Texture {
 	}
 
 	load(): Promise<HTMLImageElement> {
-		tryDetectError(this.gl);
 		const level = 0;
 		const internalFormat = this.gl.RGBA;
 		const srcFormat = this.gl.RGBA;
@@ -31,7 +30,6 @@ export class ImageTexture extends Texture {
 				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER,
 					this.gl.NEAREST);
 				this.gl.generateMipmap(this.gl.TEXTURE_2D);
-				tryDetectError(this.gl);
 				res(image);
 			};
 			image.src = this.url;

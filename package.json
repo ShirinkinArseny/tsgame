@@ -4,14 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc src/index.ts --module esnext --target esnext --outDir build/ts && rollup build/ts/index.js --file build/bundle.js --format iife",
-    "serve": "ws --spa assets/index.html",
+    "lint": "eslint --fix --ext .ts ./src",
+    "build:compile": "tsc -p tsconfig.json",
+    "build:bundle": "rollup --config rollup.config.js",
+    "build": "npm-run-all --sequential lint build:*",
+    "watch:compile": "tsc -p tsconfig.json --watch",
+    "watch:bundle": "rollup --config rollup.config.js --watch",
     "watch": "npm-run-all --parallel watch:*",
-    "watch:build": "tsc src/index.ts --watch --module esnext --target esnext --outDir build/ts/",
-    "watch:bundle": "rollup build/ts/index.js --watch --file build/bundle.js --format iife",
+    "serve": "ws --spa assets/index.html",
     "browser": "open-cli http://localhost:8000",
     "start": "npm-run-all --parallel watch serve browser",
-    "lint": "eslint --fix --ext .ts ./src"
+    "dev": "npm-run-all --parallel watch serve"
   },
   "author": "",
   "license": "WTFPL",
@@ -23,6 +26,7 @@
     "npm-run-all": "^4.1.5",
     "open-cli": "^7.0.1",
     "rollup": "^2.63.0",
+    "rollup-plugin-sourcemaps": "^0.6.3",
     "typescript": "^4.5.4"
   }
 }

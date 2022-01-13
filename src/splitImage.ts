@@ -92,10 +92,8 @@ export const splitImage = (image: HTMLImageElement) => {
 	}).map(a => {
 		a.splice(0, 1);
 		a.sort((a, b) => a[0] - b[0]);
-		let i = 0;
-		while (true) {
-			i++;
-			if (i >= a.length) break;
+		let i = 1;
+		while (i < a.length) {
 			const prev = a[i - 1];
 			const curr = a[i];
 			if (intersects(prev[0], prev[1], curr[0], curr[1])) {
@@ -108,6 +106,7 @@ export const splitImage = (image: HTMLImageElement) => {
 					Math.max(prev[3], curr[3]),
 				];
 			}
+			i++;
 		}
 		return a;
 	});
