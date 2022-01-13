@@ -20,7 +20,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let timed: Timed<Rect>;
 	let shape: ConvexShape;
 	let animtex: ImageTexture;
-	let masktex: ImageTexture;
 	let texture: ImageTexture;
 	let font: Font;
 
@@ -50,7 +49,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			);
 			rect1 = new Rect(gl);
 			rect2 = new Rect(gl, 0, 0, 0.7, 0.7);
-			rects = range(0, 6).map(idx => new Rect(
+			rects = range(0, 7).map(idx => new Rect(
 				gl,
 				0.125 * idx,
 				0,
@@ -59,6 +58,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			));
 			timed = new Timed<Rect>([
 				...rects,
+				rects[6],
 				rects[5],
 				rects[4],
 				rects[3],
@@ -67,7 +67,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			], 100);
 			texture = new ImageTexture(gl, 'sample.png');
 			animtex = new ImageTexture(gl, 'anim.png');
-			masktex = new ImageTexture(gl, 'mask.png');
 			font = new Font(gl);
 			return Promise.all([
 				texture.load(),
@@ -75,7 +74,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				texturedShader.load(),
 				colorShader.load(),
 				animtex.load(),
-				masktex.load()
 			]);
 		},
 		destroy() {
@@ -84,7 +82,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			rect2.destroy();
 			texture.destroy();
 			animtex.destroy();
-			masktex.destroy();
 			rects.forEach(r => r.destroy());
 		},
 		update: (dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number) => {
@@ -134,7 +131,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			drawTriangles(gl, rect1.indicesCount);
 
 			texturedShader.setTexture('texture', animtex);
-			texturedShader.setTexture('mask', masktex);
 			texturedShader.setMatrix(
 				'projectionMatrix',
 				ortho(-3.0, 3.0, 3.0 * h / w, -3.0 * h / w, 0.0, 100.0)
