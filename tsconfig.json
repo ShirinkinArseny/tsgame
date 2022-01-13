@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
-    "target": "es2021"
+    "module": "ESNext",
+    "target": "es2021",
+    "sourceMap": true,
+    "rootDir": "src/",
+    "outDir": "build/ts/"
   }
 }
