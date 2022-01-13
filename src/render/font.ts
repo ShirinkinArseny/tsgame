@@ -1,9 +1,11 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
-import {drawRect, Rect} from './shapes/rect';
+import {Rect} from './shapes/rect';
 import {identity, ortho, scale, translate, Vec3, Vec4} from './matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
+import {drawTriangles} from './utils/gl';
+import {Loadable} from './utils/loadable';
 
 export enum FontStyle {
 	NORMAL, BOLD
@@ -26,7 +28,7 @@ export type Text = {
 	fontStyle: FontStyle
 }[];
 
-export class Font implements Destroyable {
+export class Font implements Destroyable, Loadable {
 
 	private readonly gl: WebGLRenderingContext;
 	private fontImage: ImageTexture;
@@ -108,7 +110,7 @@ export class Font implements Destroyable {
 		);
 		this.mainRectangle.bind(this.shader.getAttribute('aVertexPosition'));
 		letter[1].bind(this.shader.getAttribute('aTexturePosition'));
-		drawRect(this.gl);
+		drawTriangles(this.gl, this.mainRectangle.indicesCount);
 		return letter[0];
 	}
 

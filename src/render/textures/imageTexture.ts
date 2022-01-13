@@ -1,7 +1,8 @@
 import {Texture} from './texture';
 import {tryDetectError} from '../webgl-demo';
+import {Loadable} from '../utils/loadable';
 
-export class ImageTexture extends Texture {
+export class ImageTexture extends Texture implements Loadable {
 
 	private readonly url: string;
 	public width: number;

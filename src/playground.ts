@@ -1,24 +1,24 @@
 import {identity, ortho, translate, Vec4} from './render/matrices';
-import {tryDetectError} from './render/webgl-demo';
-import {drawRect, Rect} from './render/shapes/rect';
 import {Scene} from './scene';
 import {ImageTexture} from './render/textures/imageTexture';
 import {Font, FontStyle} from './render/font';
 import {LoadableShader} from './render/shaders/loadableShader';
+import {drawTriangles, tryDetectError} from './render/utils/gl';
+import {Rect} from './render/shapes/rect';
+import {ConvexShape} from './render/shapes/convexShape';
+import {BorderedShape} from './render/shapes/borderedShape';
 
-export const playground: () => Scene = () => {
+export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 
 	function handleKeyboard(pressedKeysMap: Map<number, boolean>) {
-		const A = 65;
-		const D = 68;
-		const W = 87;
-		const S = 83;
-
+		//
 	}
 
 	let texturedShader: LoadableShader;
+	let colorShader: LoadableShader;
 	let rect1: Rect;
 	let rect2: Rect;
+	let shape: ConvexShape;
 	let texture: ImageTexture;
 	let font: Font;
 
@@ -31,18 +31,28 @@ export const playground: () => Scene = () => {
 
 	return {
 		name: 'Playground',
-		load(gl: WebGLRenderingContext) {
+		load() {
 			texturedShader = new LoadableShader(gl, 'textured');
-			tryDetectError(gl);
+			colorShader = new LoadableShader(gl, 'colored');
+			shape = new BorderedShape(
+				gl,
+				[
+					[0, 0],
+					[1, 0],
+					[1.5, 0.5],
+					[1, 1],
+					[0, 1]
+				],
+			);
 			rect1 = new Rect(gl);
 			rect2 = new Rect(gl, 0, 0, 0.7, 0.7);
 			texture = new ImageTexture(gl, 'sample.png');
 			font = new Font(gl);
-			tryDetectError(gl);
 			return Promise.all([
 				texture.load(),
 				font.load(),
-				texturedShader.load()
+				texturedShader.load(),
+				colorShader.load()
 			]);
 		},
 		destroy() {
@@ -54,7 +64,7 @@ export const playground: () => Scene = () => {
 		update: (dt: number, pressedKeyMap: Map<number, boolean>) => {
 			handleKeyboard(pressedKeyMap);
 		},
-		render(gl: WebGLRenderingContext, w: number, h: number, dt: number) {
+		render(w: number, h: number, dt: number) {
 
 
 			gl.viewport(
@@ -81,7 +91,7 @@ export const playground: () => Scene = () => {
 
 			rect1.bind(texturedShader.getAttribute('aVertexPosition'));
 			rect1.bind(texturedShader.getAttribute('aTexturePosition'));
-			drawRect(gl);
+			drawTriangles(gl, rect1.indicesCount);
 
 
 			texturedShader.setMatrix(
@@ -94,7 +104,30 @@ export const playground: () => Scene = () => {
 			);
 			rect1.bind(texturedShader.getAttribute('aVertexPosition'));
 			rect2.bind(texturedShader.getAttribute('aTexturePosition'));
-			drawRect(gl);
+			drawTriangles(gl, rect1.indicesCount);
+
+
+			colorShader.useProgram();
+			tryDetectError(gl);
+			colorShader.setVector3f('fillColor', [0.0, 1.0, 0.0]);
+			colorShader.setVector3f('borderColor', [1.0, 0.0, 0.0]);
+			colorShader.set1f('borderWidth', 0.05);
+			tryDetectError(gl);
+			colorShader.setMatrix(
+				'projectionMatrix',
+				ortho(-3.0, 3.0, -3.0 * h / w, 3.0 * h / w, 0.0, 100.0)
+			);
+			tryDetectError(gl);
+			colorShader.setMatrix(
+				'modelMatrix',
+				identity()
+			);
+			tryDetectError(gl);
+			shape.bind(texturedShader.getAttribute('aVertexPosition'));
+			tryDetectError(gl);
+			drawTriangles(gl, shape.indicesCount);
+			tryDetectError(gl);
+
 
 			const now = 1 / dt;
 			fps = 0.99 * fps + 0.01 * now;
