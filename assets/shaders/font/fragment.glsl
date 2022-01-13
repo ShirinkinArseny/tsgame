@@ -1,10 +1,8 @@
 precision mediump float;
 
-// Passed in from the vertex shader.
 varying vec2 v_texcoord;
 uniform vec3 color;
 
-// The texture.
 uniform sampler2D texture;
 
 void main() {

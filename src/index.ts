@@ -1,8 +1,9 @@
 import {playground} from './playground';
 import {Scene} from './scene';
+import {tryDetectError} from './render/utils/gl';
 
 let prevScene: Scene | undefined = undefined;
-let scene: Scene = playground();
+let scene: Scene;
 
 function main() {
 	const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -21,6 +22,7 @@ function main() {
 		pressedKeysMap[event.keyCode] = false;
 	}, false);
 
+	scene = playground(gl);
 
 	let prev = new Date().getTime();
 
@@ -39,7 +41,7 @@ function main() {
 				prevScene.destroy();
 				console.log('Previous scene destroyed: ' + prevScene.name);
 			}
-			init = scene.load(gl).then(() => {
+			init = scene.load().then(() => {
 				console.log('New scene loaded: ' + scene.name);
 			});
 			prevScene = scene;
@@ -51,7 +53,8 @@ function main() {
 			scene.update(diff, pressedKeysMap, (s: Scene) => {
 				scene = s;
 			});
-			scene.render(gl, displayWidth, displayHeight, diff);
+			scene.render(displayWidth, displayHeight, diff);
+			tryDetectError(gl);
 			requestAnimationFrame(() => {
 				render();
 			});

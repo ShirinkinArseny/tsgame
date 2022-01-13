@@ -13,7 +13,8 @@
     "watch": "npm-run-all --parallel watch:*",
     "serve": "ws --spa assets/index.html",
     "browser": "open-cli http://localhost:8000",
-    "start": "npm-run-all --parallel watch serve browser"
+    "start": "npm-run-all --parallel watch serve browser",
+    "dev": "npm-run-all --parallel watch serve"
   },
   "author": "",
   "license": "WTFPL",

@@ -1,8 +1,11 @@
 import {SimpleCache} from '../utils/cache';
 import {Mat4, Vec3, Vec4} from '../matrices';
 import {Destroyable} from '../utils/destroyable';
+import {Loadable} from '../utils/loadable';
 
-export class Shader implements Destroyable {
+let bindedShader: Shader | undefined;
+
+export class Shader implements Destroyable, Loadable {
 
 	private loadShader(type: number, source: string): WebGLShader {
 		const gl = this.gl;
@@ -86,13 +89,20 @@ export class Shader implements Destroyable {
 
 	useProgram() {
 		this.gl.useProgram(this.program);
-		this.set1i('texture', 0);
+		bindedShader = this;
+	}
+
+	private requireBinded() {
+		if (bindedShader !== this) {
+			throw new Error('Trying to use shader while it is not binded');
+		}
 	}
 
 	setMatrix(
 		name: string,
 		value: Mat4,
 	) {
+		this.requireBinded();
 		this.gl.uniformMatrix4fv(
 			this.uniformsCache.get(name),
 			false,
@@ -101,15 +111,23 @@ export class Shader implements Destroyable {
 	}
 
 	setVector4f(name: string, value: Vec4) {
+		this.requireBinded();
 		this.gl.uniform4fv(this.uniformsCache.get(name), value);
 	}
 
 	setVector3f(name: string, value: Vec3) {
+		this.requireBinded();
 		this.gl.uniform3fv(this.uniformsCache.get(name), value);
 	}
 
 	set1i(name: string, value: number) {
+		this.requireBinded();
 		this.gl.uniform1i(this.uniformsCache.get(name), value);
+	}
+
+	set1f(name: string, value: number) {
+		this.requireBinded();
+		this.gl.uniform1f(this.uniformsCache.get(name), value);
 	}
 
 }
