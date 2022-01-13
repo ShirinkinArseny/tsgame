@@ -139,7 +139,7 @@ export class Font implements Destroyable, Loadable {
 			projectionMatrix
 		);
 		this.shader.setVector3f('color', color);
-		this.fontImage.bindTexture();
+		this.shader.setTexture('texture', this.fontImage);
 	}
 
 	drawString(
