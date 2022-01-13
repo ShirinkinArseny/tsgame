@@ -1,14 +1,14 @@
-import {Destroyable} from "./render/utils/destroyable";
+import {Destroyable} from './render/utils/destroyable';
 
 
 export interface Scene extends Destroyable {
 
-    name: String
+	name: string;
 
-    load(gl: WebGLRenderingContext): Promise<any>
+	load(gl: WebGLRenderingContext): Promise<any>;
 
-    update(dt: number, pressedKeyMap: Map<number, boolean>, changeScene: (Scene) => void)
+	update(dt: number, pressedKeyMap: Map<number, boolean>, changeScene: (Scene) => void);
 
-    render(gl: WebGLRenderingContext, w: number, h: number, dt: number)
+	render(gl: WebGLRenderingContext, w: number, h: number, dt: number);
 
 }
