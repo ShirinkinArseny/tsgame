@@ -1,7 +1,5 @@
-
-
 export interface Destroyable {
 
-    destroy()
+	destroy();
 
 }
