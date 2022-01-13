@@ -1,4 +1,4 @@
-import {identity, ortho, translate, Vec4} from './render/matrices';
+import {identity, ortho, rotate, translate, Vec4} from './render/matrices';
 import {Scene} from './scene';
 import {ImageTexture} from './render/textures/imageTexture';
 import {Font, FontStyle} from './render/font';
@@ -9,10 +9,6 @@ import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 
 export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
-
-	function handleKeyboard(pressedKeysMap: Map<number, boolean>) {
-		//
-	}
 
 	let texturedShader: LoadableShader;
 	let colorShader: LoadableShader;
@@ -28,6 +24,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 		word: word,
 		fontStyle: idx % 2 === 0 ? FontStyle.NORMAL : FontStyle.BOLD
 	}));
+
+	let cx = 0;
 
 	return {
 		name: 'Playground',
@@ -61,8 +59,9 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			rect2.destroy();
 			texture.destroy();
 		},
-		update: (dt: number, pressedKeyMap: Map<number, boolean>) => {
-			handleKeyboard(pressedKeyMap);
+		update: (dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number) => {
+			const p = 1 - cursorY * cursorY;
+			cx = p * cx + (1-p) * (cursorX - 0.5) * 2;
 		},
 		render(w: number, h: number, dt: number) {
 
@@ -107,28 +106,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			drawTriangles(gl, rect1.indicesCount);
 
 
-			colorShader.useProgram();
-			tryDetectError(gl);
-			colorShader.setVector3f('fillColor', [0.0, 1.0, 0.0]);
-			colorShader.setVector3f('borderColor', [1.0, 0.0, 0.0]);
-			colorShader.set1f('borderWidth', 0.05);
-			tryDetectError(gl);
-			colorShader.setMatrix(
-				'projectionMatrix',
-				ortho(-3.0, 3.0, -3.0 * h / w, 3.0 * h / w, 0.0, 100.0)
-			);
-			tryDetectError(gl);
-			colorShader.setMatrix(
-				'modelMatrix',
-				identity()
-			);
-			tryDetectError(gl);
-			shape.bind(texturedShader.getAttribute('aVertexPosition'));
-			tryDetectError(gl);
-			drawTriangles(gl, shape.indicesCount);
-			tryDetectError(gl);
-
-
 			const now = 1 / dt;
 			fps = 0.99 * fps + 0.01 * now;
 
@@ -136,13 +113,30 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			const ww = w / h * scale;
 			const hh = scale;
 
-			const viewport: Vec4 = [-ww, ww, hh, -hh];
+			const viewport = ortho(-ww, ww, hh, -hh, 0.0, 100.0);
+			rotate(viewport, cx * Math.PI, [0, 0, 1]);
 
 			const r = (new Date().getTime() % 5000) / 5000 * Math.PI * 2;
-			const d = 1; //Math.sin(r) * 0.2 + 1.2
+			const d = Math.sin(r) * 0.2 + 1.2;
 
 			font.drawString('Hello world! fps: ' + fps, -15, -7, FontStyle.BOLD, [1.0, 0.0, 0.0], viewport);
 			font.drawText(text, -15, -5, 40, [0.0, 0.0, 0.3], viewport, d, 1 / d);
+
+
+			colorShader.useProgram();
+			colorShader.setVector4f('fillColor', [0.0, 1.0, 0.0, 0.5]);
+			colorShader.setVector4f('borderColor', [1.0, 0.0, 0.0, 1.0]);
+			colorShader.set1f('borderWidth', 0.05);
+			colorShader.setMatrix(
+				'projectionMatrix',
+				ortho(-3.0, 3.0, -3.0 * h / w, 3.0 * h / w, 0.0, 100.0)
+			);
+			colorShader.setMatrix(
+				'modelMatrix',
+				identity()
+			);
+			shape.bind(texturedShader.getAttribute('aVertexPosition'));
+			drawTriangles(gl, shape.indicesCount);
 
 
 		}

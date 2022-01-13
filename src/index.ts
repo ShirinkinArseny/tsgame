@@ -15,12 +15,18 @@ function main() {
 	}
 
 	const pressedKeysMap = new Map<number, boolean>();
+	let cursorX = 0;
+	let cursorY = 0;
 	document.addEventListener('keydown', event => {
 		pressedKeysMap[event.keyCode] = true;
 	}, false);
 	document.addEventListener('keyup', event => {
 		pressedKeysMap[event.keyCode] = false;
 	}, false);
+	document.addEventListener('mousemove', event => {
+		cursorX = event.x;
+		cursorY = event.y;
+	});
 
 	scene = playground(gl);
 
@@ -50,7 +56,7 @@ function main() {
 			const now = new Date().getTime();
 			const diff = (now - prev) / 1000;
 			prev = now;
-			scene.update(diff, pressedKeysMap, (s: Scene) => {
+			scene.update(diff, pressedKeysMap, cursorX / displayWidth, cursorY / displayHeight, (s: Scene) => {
 				scene = s;
 			});
 			scene.render(displayWidth, displayHeight, diff);

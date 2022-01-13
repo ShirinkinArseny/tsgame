@@ -1,7 +1,7 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
 import {Rect} from './shapes/rect';
-import {identity, ortho, scale, translate, Vec3, Vec4} from './matrices';
+import {identity, Mat4, ortho, scale, translate, Vec3, Vec4} from './matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
 import {drawTriangles} from './utils/gl';
@@ -132,11 +132,11 @@ export class Font implements Destroyable, Loadable {
 		}
 	}
 
-	private initRenderingText(viewport: Vec4, color: Vec3) {
+	private initRenderingText(projectionMatrix: Mat4, color: Vec3) {
 		this.shader.useProgram();
 		this.shader.setMatrix(
 			'projectionMatrix',
-			ortho(viewport[0], viewport[1], viewport[2], viewport[3], 0.0, 100.0)
+			projectionMatrix
 		);
 		this.shader.setVector3f('color', color);
 		this.fontImage.bindTexture();
@@ -146,10 +146,10 @@ export class Font implements Destroyable, Loadable {
 		text: string, x: number, y: number,
 		fontStyle: FontStyle = FontStyle.NORMAL,
 		color: Vec3 = [0, 0, 0],
-		viewport: Vec4,
+		projectionMatrix: Mat4,
 		kerning = 1.0
 	) {
-		this.initRenderingText(viewport, color);
+		this.initRenderingText(projectionMatrix, color);
 		this.doDrawString(text, x, y, kerning, fontStyle);
 	}
 
@@ -157,14 +157,14 @@ export class Font implements Destroyable, Loadable {
 		text: Text,
 		x: number, y: number, w: number,
 		color: Vec3 = [0, 0, 0],
-		viewport: Vec4,
+		projectionMatrix: Mat4,
 		kerning = 1.0,
 		lineHeight = 1.0
 	) {
 		let xx = x;
 		let yy = y;
 		const x2 = x + w;
-		this.initRenderingText(viewport, color);
+		this.initRenderingText(projectionMatrix, color);
 		text.forEach(({word, fontStyle}) => {
 			const w = this.getStringWidth(word, fontStyle);
 			if (xx + w * kerning >= x + x2) {
