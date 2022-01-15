@@ -108,8 +108,8 @@ export class Font implements Destroyable, Loadable {
 				[x, y, 0.0]
 			), [letter[0], 1.0, 1.0])
 		);
-		this.mainRectangle.bind(this.shader.getAttribute('aVertexPosition'));
-		letter[1].bind(this.shader.getAttribute('aTexturePosition'));
+		this.mainRectangle.bindModel(this.shader.getAttribute('aVertexPosition'));
+		letter[1].bindModel(this.shader.getAttribute('aTexturePosition'));
 		drawTriangles(this.gl, this.mainRectangle.indicesCount);
 		return letter[0];
 	}

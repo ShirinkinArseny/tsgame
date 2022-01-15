@@ -1,4 +1,4 @@
-import {Vec2} from '../matrices';
+import {getRotateMat2, multiplyMatVec, Vec2} from '../matrices';
 
 export const length = (v: Vec2) => {
 	return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -31,3 +31,13 @@ export const distanceBetweenPointAndLine = (
 	const s = area(ab, ac);
 	return s * 2 / length(ab);
 };
+export const translatePoint = (point: Vec2, [x = 0, y = 0]) => {
+	return [point[0] + x, point[1] + y];
+};
+export const rotatePoint = (point: Vec2, angle: number, origin: Vec2 = [0, 0]) => {
+	const movedPoint = aToB(origin, point);
+	const rotated = multiplyMatVec(getRotateMat2(angle), movedPoint) as Vec2;
+	return aToB(rotated, origin);
+};
+
+export const degreesToRadians = (deg: number) => deg * (Math.PI / 180);

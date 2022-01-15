@@ -1,4 +1,4 @@
-import {identity, ortho, rotate, translate, Vec4} from './render/matrices';
+import {identity, multiplyMatVec, ortho, rotate, translate, Vec4} from './render/matrices';
 import {Scene} from './scene';
 import {ImageTexture} from './render/textures/imageTexture';
 import {Font, FontStyle} from './render/font';
@@ -9,6 +9,7 @@ import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 import {Timed} from './render/utils/timed';
 import {range} from './render/utils/lists';
+import {getFiveField, getGraph} from './render/field/fiveField';
 
 export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 
@@ -22,6 +23,13 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let animtex: ImageTexture;
 	let texture: ImageTexture;
 	let font: Font;
+	const fiveShapes = getGraph().map(node => {
+		return new BorderedShape(gl, node.points);
+	});
+	// const fiveShapes = getFiveField().map((points) => {
+	// 	return new BorderedShape(gl, points);
+	// });
+	// const myShape = new BorderedShape(gl, [[0, 0], [-0.5, 0.5], [0, 1], [1, 1], [1, 0]]);
 
 	let fps = 0;
 
@@ -31,6 +39,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	}));
 
 	let cx = 0;
+
 
 	return {
 		name: 'Playground',
@@ -90,6 +99,23 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 		},
 		render(w: number, h: number, dt: number) {
 
+			function drawShape(shape: BorderedShape, fillColor: Vec4 = [1, 0, 0, 0.8], borderColor: Vec4 = [0, 0, 0, 1]) {
+				colorShader.useProgram();
+				colorShader.setVector4f('fillColor', fillColor);
+				colorShader.setVector4f('borderColor', borderColor);
+				colorShader.set1f('borderWidth', 0.05);
+				colorShader.setMatrix(
+					'projectionMatrix',
+					ortho(-30.0, 30.0, -30.0 * h / w, 30.0 * h / w, 0.0, 100.0)
+				);
+				colorShader.setMatrix(
+					'modelMatrix',
+					identity()
+				);
+				shape.bindModel(colorShader.getAttribute('aVertexPosition'));
+				drawTriangles(gl, shape.indicesCount);
+			}
+
 
 			gl.viewport(
 				0, 0,
@@ -113,8 +139,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				translate(identity(), [-1.0, -3.0, 0.0])
 			);
 
-			rect1.bind(texturedShader.getAttribute('aVertexPosition'));
-			rect1.bind(texturedShader.getAttribute('aTexturePosition'));
+			rect1.bindModel(texturedShader.getAttribute('aVertexPosition'));
+			rect1.bindModel(texturedShader.getAttribute('aTexturePosition'));
 			drawTriangles(gl, rect1.indicesCount);
 
 
@@ -126,8 +152,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				'modelMatrix',
 				translate(identity(), [-3.0, -3.0, 0.0])
 			);
-			rect1.bind(texturedShader.getAttribute('aVertexPosition'));
-			rect2.bind(texturedShader.getAttribute('aTexturePosition'));
+			rect1.bindModel(texturedShader.getAttribute('aVertexPosition'));
+			rect2.bindModel(texturedShader.getAttribute('aTexturePosition'));
 			drawTriangles(gl, rect1.indicesCount);
 
 			texturedShader.setTexture('texture', animtex);
@@ -139,8 +165,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				'modelMatrix',
 				translate(identity(), [2.0, 0.5, 0.0])
 			);
-			rect1.bind(texturedShader.getAttribute('aVertexPosition'));
-			timed.get().bind(texturedShader.getAttribute('aTexturePosition'));
+			rect1.bindModel(texturedShader.getAttribute('aVertexPosition'));
+			timed.get().bindModel(texturedShader.getAttribute('aTexturePosition'));
 			drawTriangles(gl, rect1.indicesCount);
 
 
@@ -161,22 +187,14 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			font.drawText(text, -15, -5, 40, [0.0, 0.0, 0.3], viewport, d, 1 / d);
 
 
-			colorShader.useProgram();
-			colorShader.setVector4f('fillColor', [0.0, 1.0, 0.0, 0.5]);
-			colorShader.setVector4f('borderColor', [1.0, 0.0, 0.0, 1.0]);
-			colorShader.set1f('borderWidth', 0.05);
-			colorShader.setMatrix(
-				'projectionMatrix',
-				ortho(-3.0, 3.0, -3.0 * h / w, 3.0 * h / w, 0.0, 100.0)
-			);
-			colorShader.setMatrix(
-				'modelMatrix',
-				identity()
-			);
-			shape.bind(texturedShader.getAttribute('aVertexPosition'));
-			drawTriangles(gl, shape.indicesCount);
+			// drawShape(myShape);
+			fiveShapes.forEach((shape) => {
+				drawShape(shape);
+			});
 
 
 		}
 	};
+
 };
+

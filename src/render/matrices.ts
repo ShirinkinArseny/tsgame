@@ -1,3 +1,5 @@
+import {range} from './utils/lists';
+
 export type Mat4 = [
 	number, number, number, number,
 	number, number, number, number,
@@ -104,6 +106,7 @@ export function rotate(matrix: Mat4, rad: number, axis: Vec3) {
 	matrix[11] = a03 * b20 + a13 * b21 + a23 * b22;
 }
 
+
 export function perspective(fovy: number, aspect: number, near: number, far: number): Mat4 {
 	const f = 1.0 / Math.tan(fovy / 2);
 	const nf = 1 / (near - far);
@@ -183,4 +186,22 @@ export function vectorProduct(a: Vec3, b: Vec3): Vec3 {
 
 export function buildVector(from: Vec3, to: Vec3): Vec3 {
 	return [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+}
+
+export function multiplyMatVec(matrix: number[][], vector: number[]) {
+
+	return matrix.map((row) => range(0, row.length - 1)
+		.map((i) => row[i] * vector[i])
+		.reduce((acc, a) => acc + a, 0)
+	);
+}
+
+export function getRotateMat2(rad: number) {
+
+	const s = Math.sin(rad);
+	const c = Math.cos(rad);
+	return [
+		[c, -s],
+		[s, c]
+	];
 }
