@@ -18,56 +18,21 @@ export const getFiveField = (width: number = 3, height: number = 3, bigSideSize:
 };
 
 function getCrossPoints() {
-	const origin = [0, 0];
-	let crossCenterPoints: Array<Vec2> = [];
-	// let n = 5;
+	const crossCenterPoints: Array<Vec2> = [];
 	const boundRight = 20;
 	const boundUp = 20;
-	const boundLeft = -1;
-	const boundDown = -1;
-	const crossSize = 3;
-	let offsetRight = [2, 1];
-	let offsetUp = [-1, 2];
-	let puttedDown = 0;
-	for (let x = origin[0], y = origin[1], i = 0; x <= boundRight && x >= boundLeft && y <= boundUp && y >= boundDown; x += offsetRight[0], y += offsetRight[1], i++) {
-		if (i % 2 === 1) {
-			puttedDown++;
-			x = x - offsetUp[0];
-			y = y - offsetUp[1];
-		}
-		let j = 0;
 
-		for (let xx = x, yy = y; xx <= boundRight && xx >= boundLeft && yy <= boundUp && yy >= boundDown; xx += offsetUp[0], yy += offsetUp[1]) {
-			j++;
-			crossCenterPoints.push([xx, yy]);
-
-			if (
-				// j > puttedDown + 2 &&
-				j % 2 === 0) {
-				xx = xx + offsetRight[0];
-				yy = yy + offsetRight[1];
-			}
-
+	for (let x = 0; x < boundRight; x++) {
+		for (let y = [2, 0, 3, 1, 4][x % 5]; y < boundUp; y += 5) {
+			crossCenterPoints.push([x, y]);
 		}
 	}
+
 	return crossCenterPoints;
 }
 
 export function getGraph() {
 	const crossPoints = getCrossPoints();
-	console.log(crossPoints);
-	// const crosses = crossPoints.map(getCrossFiveShapes);
-	// const nodeCrosses = crosses.map(([shapeA, shapeB, shapeC, shapeD]) => {
-	// 	const A = new FiveNode(shapeA);
-	// 	const B = new FiveNode(shapeB);
-	// 	const C = new FiveNode(shapeC);
-	// 	const D = new FiveNode(shapeD);
-	// 	A.linkToNode(B);
-	// 	A.linkToNode(D);
-	// 	C.linkToNode(B);
-	// 	C.linkToNode(D);
-	// 	return[A,B,C,D];
-	// })
 
 	const fiveShapePoints = crossPoints.map(getCrossFiveShapes).flat(1);
 	const nodes = fiveShapePoints.map((points) => {
@@ -77,6 +42,7 @@ export function getGraph() {
 	nodes.forEach(node => {
 		node.points.forEach((point, i, points) => {
 			const newEdge = new FiveEgde([points[i], points[((i + 1) % 5)]]);
+
 			const isAlreadyExists = edges.some(edge => {
 				const areEqual = areEqualEgdes(edge, newEdge);
 				if (areEqual) {
@@ -89,6 +55,7 @@ export function getGraph() {
 			if (isAlreadyExists) {
 				return;
 			}
+			newEdge.addNode(node);
 			edges.push(newEdge);
 		});
 	});
@@ -100,6 +67,7 @@ export function getGraph() {
 	});
 	console.log('edges', edges);
 	console.log('shapes', fiveShapePoints);
+	console.log('nodes', nodes);
 	return nodes;
 
 }
@@ -167,4 +135,8 @@ function areEqualEgdes(edge1: FiveEgde, edge2: FiveEgde) {
 function arePointsEqual(point1: Vec2, point2: Vec2) {
 	const epsilon = 0.01;
 	return Math.abs(point1[0] - point2[0]) < epsilon && Math.abs(point1[1] - point2[1]) < epsilon;
+}
+
+function mod(a: number, b: number) {
+	return ((a % b) + b) % b;
 }
