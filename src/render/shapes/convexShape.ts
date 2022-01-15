@@ -36,7 +36,7 @@ export class ConvexShape implements Destroyable {
 		), gl.STATIC_DRAW);
 	}
 
-	bind(
+	bindModel(
 		vertexPositionAttribute: number
 	) {
 		{
