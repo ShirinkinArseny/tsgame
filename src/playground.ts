@@ -9,7 +9,7 @@ import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 import {Timed} from './render/utils/timed';
 import {range} from './render/utils/lists';
-import {getFiveField, getGraph} from './render/field/fiveField';
+import {getFiveAngleGraph} from './render/field/fiveField';
 
 export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 
@@ -23,7 +23,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let animtex: ImageTexture;
 	let texture: ImageTexture;
 	let font: Font;
-	const fiveShapes = getGraph().map(node => {
+	const fiveShapes = getFiveAngleGraph().map(node => {
 		return new BorderedShape(gl, node.points);
 	});
 	// const fiveShapes = getFiveField().map((points) => {
@@ -94,8 +94,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			rects.forEach(r => r.destroy());
 		},
 		update: (dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number) => {
-			const p = 1 - cursorY * cursorY;
-			cx = p * cx + (1 - p) * (cursorX - 0.5) * 2;
+			const p = 1 - (cursorY * 0.5 + 0.5) * (cursorY * 0.5 + 0.5);
+			cx = p * cx + (1 - p) * cursorX;
 		},
 		render(w: number, h: number, dt: number) {
 

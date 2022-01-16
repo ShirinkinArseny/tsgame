@@ -56,9 +56,12 @@ function main() {
 			const now = new Date().getTime();
 			const diff = (now - prev) / 1000;
 			prev = now;
-			scene.update(diff, pressedKeysMap, cursorX / displayWidth, cursorY / displayHeight, (s: Scene) => {
-				scene = s;
-			});
+			scene.update(diff, pressedKeysMap,
+				2 * (cursorX / displayWidth - 0.5),
+				2 * (cursorY / displayHeight - 0.5),
+				(s: Scene) => {
+					scene = s;
+				});
 			scene.render(displayWidth, displayHeight, diff);
 			tryDetectError(gl);
 			requestAnimationFrame(() => {
