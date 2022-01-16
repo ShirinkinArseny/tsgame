@@ -1,10 +1,12 @@
 import {ConvexShape} from './convexShape';
 import {range} from '../utils/lists';
 import {distanceBetweenPointAndLine} from '../utils/geom';
-import {Vec2} from '../matrices';
+import {Vec2} from '../utils/matrices';
 
 
 export class BorderedShape extends ConvexShape {
+
+	bounds: [number, number][];
 
 	constructor(
 		gl: WebGLRenderingContext,
@@ -31,6 +33,7 @@ export class BorderedShape extends ConvexShape {
 			triangles,
 			indices
 		);
+		this.bounds = bounds;
 	}
 
 

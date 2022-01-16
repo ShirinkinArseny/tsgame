@@ -6,6 +6,8 @@ let prevScene: Scene | undefined = undefined;
 let scene: Scene;
 
 function main() {
+
+
 	const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 	const gl = canvas.getContext('webgl2');
 
@@ -17,6 +19,7 @@ function main() {
 	const pressedKeysMap = new Map<number, boolean>();
 	let cursorX = 0;
 	let cursorY = 0;
+	let cursorPressed = false;
 	document.addEventListener('keydown', event => {
 		pressedKeysMap[event.keyCode] = true;
 	}, false);
@@ -26,6 +29,12 @@ function main() {
 	document.addEventListener('mousemove', event => {
 		cursorX = event.x;
 		cursorY = event.y;
+	});
+	document.addEventListener('mousedown', event => {
+		cursorPressed = true;
+	});
+	document.addEventListener('mouseup', event => {
+		cursorPressed = false;
 	});
 
 	scene = playground(gl);
@@ -57,8 +66,8 @@ function main() {
 			const diff = (now - prev) / 1000;
 			prev = now;
 			scene.update(diff, pressedKeysMap,
-				2 * (cursorX / displayWidth - 0.5),
-				2 * (cursorY / displayHeight - 0.5),
+				cursorX / displayWidth * 2 - 1,
+				-(cursorY / displayHeight * 2 - 1),
 				(s: Scene) => {
 					scene = s;
 				});

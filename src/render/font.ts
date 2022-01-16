@@ -1,7 +1,7 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
 import {Rect} from './shapes/rect';
-import {identity, Mat4, ortho, scale, translate, Vec3, Vec4} from './matrices';
+import {identity, Mat4, ortho, scale, translate, Vec3, Vec4} from './utils/matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
 import {drawTriangles} from './utils/gl';
