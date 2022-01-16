@@ -111,20 +111,6 @@ export function rotate(matrix: Mat4, rad: number, axis: Vec3) {
 	matrix[11] = a03 * b20 + a13 * b21 + a23 * b22;
 }
 
-
-export function perspective(fovy: number, aspect: number, near: number, far: number): Mat4 {
-	const f = 1.0 / Math.tan(fovy / 2);
-	const nf = 1 / (near - far);
-	const matrix: Mat4 = [
-		f / aspect, 0, 0, 0,
-		0, f, 0, 0,
-		0, 0, (far + near) * nf, -1,
-		0, 0, 2 * far * near * nf, 0,
-	];
-	return matrix;
-}
-
-
 export function ortho(
 	left,
 	right,

@@ -9,7 +9,7 @@ import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 import {Timed} from './render/utils/timed';
 import {range} from './render/utils/lists';
-import {FiveNode, getFiveField, getGraph} from './render/field/fiveField';
+import {FiveNode, getGraph} from './render/field/fiveField';
 import {crossProduct, isPointInConvexShape} from './render/utils/geom';
 
 export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
@@ -27,7 +27,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let worldToScreen = identity();
 	let screenToWorld = identity();
 	let wx, wy: number;
-	const graph = getGraph();
+	const graph = getGraph(10, 10, -10, -10, 0.5);
 	const shapeMap = new Map<FiveNode, BorderedShape>();
 	graph.forEach(node => {
 		const shape = new BorderedShape(gl, node.points);

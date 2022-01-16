@@ -1,40 +1,25 @@
 import {degreesToRadians, rotatePoint, translatePoint} from '../utils/geom';
-import {Vec2} from '../utils/matrices';
+import {Vec2} from '../matrices';
 
-export const getFiveField = (width: number = 3, height: number = 3, bigSideSize: number = 1) => {
-
-	const upFiveAngle = [[0, 0], [0.5, -0.5], [0.5, -1.5], [-0.5, -1.5], [-0.5, -0.5]];
-
-	const rightFiveAngle = rotateShape(upFiveAngle, 0);
-
-	const downFiveAngle = rotateShape(upFiveAngle, 0);
-
-	const leftFiveAngle = rotateShape(upFiveAngle, 0);
-	const baseCross = [upFiveAngle, rightFiveAngle, downFiveAngle, leftFiveAngle];
-	return baseCross;
-	// 	.map((shape) => {
-	// 	return rotateShape(shape, 0);
-	// });
-};
-
-function getCrossPoints() {
+function getCrossPoints(boundRight = 20, boundUp = 20, boundLeft = 0, boundDown = 0, shapeSize = 1) {
 	const crossCenterPoints: Array<Vec2> = [];
-	const boundRight = 20;
-	const boundUp = 20;
 
-	for (let x = 0; x < boundRight; x++) {
-		for (let y = [2, 0, 3, 1, 4][x % 5]; y < boundUp; y += 5) {
-			crossCenterPoints.push([x, y]);
+	const xx = boundLeft / shapeSize;
+	const xInt = Math.floor(xx);
+	const xDiff = xInt - xx;
+	for (let x = xInt; x * shapeSize < boundRight; x += 1) {
+		for (let y = [2, 0, 3, 1, 4][((x % 5) + 5) % 5] + boundDown / shapeSize; y * shapeSize < boundUp; y += 5) {
+			crossCenterPoints.push([x * shapeSize - xDiff, y * shapeSize]);
 		}
 	}
 
 	return crossCenterPoints;
 }
 
-export function getGraph() {
-	const crossPoints = getCrossPoints();
+export function getGraph(boundRight?, boundUp?, boundLeft?, boundDown?, shapeSize?) {
+	const crossPoints = getCrossPoints(boundRight, boundUp, boundLeft, boundDown, shapeSize);
 
-	const fiveShapePoints = crossPoints.map(getCrossFiveShapes).flat(1);
+	const fiveShapePoints = crossPoints.map(crossCenter => getCrossFiveShapes(crossCenter, shapeSize)).flat(1);
 	const nodes = fiveShapePoints.map((points) => {
 		return new FiveNode(points);
 	});
@@ -65,15 +50,18 @@ export function getGraph() {
 			edge.nodes[0].linkToNode(edge.nodes[1]);
 		}
 	});
-	console.log('edges', edges);
-	console.log('shapes', fiveShapePoints);
-	console.log('nodes', nodes);
+
 	return nodes;
 
 }
 
-function getCrossFiveShapes(crossCenter: Vec2): Array<Array<Vec2>> {
-	const upFiveAngle: Vec2[] = [[0, 0], [0.5, -0.5], [0.5, -1.5], [-0.5, -1.5], [-0.5, -0.5]];
+function getCrossFiveShapes(crossCenter: Vec2, shapeSize = 1): Array<Array<Vec2>> {
+	const upFiveAngle: Vec2[] = [
+		[0, 0],
+		[0.5 * shapeSize, -0.5 * shapeSize],
+		[0.5 * shapeSize, -1.5 * shapeSize],
+		[-0.5 * shapeSize, -1.5 * shapeSize],
+		[-0.5 * shapeSize, -0.5 * shapeSize]];
 	const translatedFiveAngle = upFiveAngle.map((point: Vec2) => {
 		return translatePoint(point, crossCenter);
 	});
@@ -92,9 +80,8 @@ function rotateShape(shape, angleDeg, origin?) {
 	});
 }
 
-export class FiveNode {
+class FiveNode {
 	points: Array<Vec2>;
-	angleGrad: number;
 	nodes: FiveNode[];
 
 	constructor(points: Array<Vec2>) {
@@ -135,8 +122,4 @@ function areEqualEgdes(edge1: FiveEgde, edge2: FiveEgde) {
 function arePointsEqual(point1: Vec2, point2: Vec2) {
 	const epsilon = 0.01;
 	return Math.abs(point1[0] - point2[0]) < epsilon && Math.abs(point1[1] - point2[1]) < epsilon;
-}
-
-function mod(a: number, b: number) {
-	return ((a % b) + b) % b;
 }
