@@ -5,8 +5,8 @@ export class FBO extends Texture {
 
 	private readonly fb: WebGLFramebuffer;
 	private readonly depthBuffer: WebGLRenderbuffer;
-	private readonly width: number;
-	private readonly height: number;
+	readonly width: number;
+	readonly height: number;
 
 	constructor(
 		gl: WebGLRenderingContext,
@@ -55,6 +55,7 @@ export class FBO extends Texture {
 		gl.framebufferRenderbuffer(gl.FRAMEBUFFER,
 			gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER,
 			this.depthBuffer);
+		gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 	}
 
 	bind() {
@@ -62,7 +63,7 @@ export class FBO extends Texture {
 
 		this.gl.viewport(0, 0, this.width, this.height);
 
-		this.gl.clearColor(0, 0, 1, 1);
+		this.gl.clearColor(0, 0, 0, 1);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT |
 			this.gl.DEPTH_BUFFER_BIT);
 	}

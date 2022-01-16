@@ -109,6 +109,7 @@ export function rotate(matrix: Mat4, rad: number, axis: Vec3) {
 	matrix[9] = a01 * b20 + a11 * b21 + a21 * b22;
 	matrix[10] = a02 * b20 + a12 * b21 + a22 * b22;
 	matrix[11] = a03 * b20 + a13 * b21 + a23 * b22;
+	return matrix;
 }
 
 export function ortho(

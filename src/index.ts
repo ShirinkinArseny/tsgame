@@ -1,6 +1,8 @@
-import {playground} from './playground';
 import {Scene} from './scene';
 import {tryDetectError} from './render/utils/gl';
+import {GameFieldScene} from './render/gameFieldScene';
+import {GameField} from './gameField';
+import {Pixelized} from './render/pixelized';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
@@ -37,7 +39,7 @@ function main() {
 		cursorPressed = false;
 	});
 
-	scene = playground(gl);
+	scene = new Pixelized(gl, new GameFieldScene(gl, new GameField()));
 
 	let prev = new Date().getTime();
 
@@ -65,14 +67,25 @@ function main() {
 			const now = new Date().getTime();
 			const diff = (now - prev) / 1000;
 			prev = now;
+
+			gl.viewport(0, 0, displayWidth, displayHeight);
+			gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+			gl.enable(gl.BLEND);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+			scene.render(displayWidth, displayHeight, diff);
+			tryDetectError(gl);
+
 			scene.update(diff, pressedKeysMap,
 				cursorX / displayWidth * 2 - 1,
-				-(cursorY / displayHeight * 2 - 1),
+				cursorY / displayHeight * 2 - 1,
+				cursorPressed,
 				(s: Scene) => {
 					scene = s;
 				});
-			scene.render(displayWidth, displayHeight, diff);
-			tryDetectError(gl);
+
 			requestAnimationFrame(() => {
 				render();
 			});

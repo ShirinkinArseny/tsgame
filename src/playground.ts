@@ -1,16 +1,17 @@
-import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from './render/utils/matrices';
+import {identity, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from './render/utils/matrices';
 import {Scene} from './scene';
 import {ImageTexture} from './render/textures/imageTexture';
 import {Font, FontStyle} from './render/font';
 import {LoadableShader} from './render/shaders/loadableShader';
-import {drawTriangles, tryDetectError} from './render/utils/gl';
+import {drawTriangles} from './render/utils/gl';
 import {Rect} from './render/shapes/rect';
 import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 import {Timed} from './render/utils/timed';
 import {range} from './render/utils/lists';
-import {FiveNode, getGraph} from './render/field/fiveField';
-import {crossProduct, isPointInConvexShape} from './render/utils/geom';
+import {getGraph} from './render/field/fiveField';
+import {isPointInConvexShape} from './render/utils/geom';
+import {FieldNode} from './render/field/fieldNode';
 
 export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 
@@ -19,8 +20,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let rect1: Rect;
 	let rect2: Rect;
 	let rects: Rect[];
-	let timed: Timed<Rect>;
 	let shape: ConvexShape;
+	let timed: Timed<Rect>;
 	let animtex: ImageTexture;
 	let texture: ImageTexture;
 	let font: Font;
@@ -28,12 +29,12 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let screenToWorld = identity();
 	let wx, wy: number;
 	const graph = getGraph(10, 10, -10, -10, 0.5);
-	const shapeMap = new Map<FiveNode, BorderedShape>();
+	const shapeMap = new Map<FieldNode, BorderedShape>();
 	graph.forEach(node => {
 		const shape = new BorderedShape(gl, node.points);
 		shapeMap.set(node, shape);
 	});
-	const rangeToNode = new Map<FiveNode, number>();
+	const rangeToNode = new Map<FieldNode, number>();
 
 	let fps = 0;
 
@@ -77,8 +78,8 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				rects[2],
 				rects[1],
 			], 100);
-			texture = new ImageTexture(gl, 'sample.png');
 			animtex = new ImageTexture(gl, 'anim.png');
+			texture = new ImageTexture(gl, 'sample.png');
 			font = new Font(gl);
 			return Promise.all([
 				texture.load(),
@@ -96,7 +97,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			animtex.destroy();
 			rects.forEach(r => r.destroy());
 		},
-		update: (dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number) => {
+		update: (dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number, cursorPressed: boolean) => {
 			const p = 1 - cursorY * cursorY;
 			cx = p * cx + (1 - p) * (cursorX - 0.5) * 2;
 			[wx, wy] = multiplyMatToVec(screenToWorld, [cursorX, cursorY, 0, 1]);
@@ -105,7 +106,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			);
 			rangeToNode.clear();
 			if (nodeUnderPointer) {
-				const recc = (n: FiveNode, dist: number) => {
+				const recc = (n: FieldNode, dist: number) => {
 					if (dist < 0) return;
 					const v = rangeToNode.get(n);
 					if (!v || v < dist) {
@@ -113,7 +114,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 						n.nodes.forEach(nn => recc(nn, dist - 1));
 					}
 				};
-				recc(nodeUnderPointer, 3);
+				recc(nodeUnderPointer, 7);
 			}
 		},
 		render(w: number, h: number, dt: number) {
@@ -121,7 +122,7 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 			worldToScreen = ortho(-30.0, 30.0, -30.0 * h / w, 30.0 * h / w, 0.0, 100.0);
 			screenToWorld = reverse(worldToScreen);
 
-			function drawShape(node: FiveNode, fillColor: Vec4 = [1, 0, 0, 0.8], borderColor: Vec4 = [0, 0, 0, 1]) {
+			function drawShape(node: FieldNode, fillColor: Vec4 = [1, 0, 0, 0.8], borderColor: Vec4 = [0, 0, 0, 1]) {
 				const shape = shapeMap.get(node);
 				if (rangeToNode.get(node)) {
 					colorShader.setVector4f('fillColor', [1, 1, 0, 1]);
@@ -134,17 +135,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				drawTriangles(gl, shape.indicesCount);
 			}
 
-
-			gl.viewport(
-				0, 0,
-				gl.drawingBufferWidth, gl.drawingBufferHeight,
-			);
-			gl.clearColor(1.0, 1.0, 1.0, 1.0);
-
-			gl.enable(gl.BLEND);
-			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
 			texturedShader.useProgram();
 			texturedShader.setTexture('texture', texture);
 
@@ -156,9 +146,14 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				'modelMatrix',
 				translate(identity(), [-1.0, -3.0, 0.0])
 			);
-
-			rect1.bindModel(texturedShader.getAttribute('aVertexPosition'));
-			rect1.bindModel(texturedShader.getAttribute('aTexturePosition'));
+			texturedShader.setModel(
+				'aVertexPosition',
+				rect1
+			);
+			texturedShader.setModel(
+				'aTexturePosition',
+				rect1
+			);
 			drawTriangles(gl, rect1.indicesCount);
 
 
@@ -170,8 +165,14 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				'modelMatrix',
 				translate(identity(), [-3.0, -3.0, 0.0])
 			);
-			rect1.bindModel(texturedShader.getAttribute('aVertexPosition'));
-			rect2.bindModel(texturedShader.getAttribute('aTexturePosition'));
+			texturedShader.setModel(
+				'aVertexPosition',
+				rect1
+			);
+			texturedShader.setModel(
+				'aTexturePosition',
+				rect2
+			);
 			drawTriangles(gl, rect1.indicesCount);
 
 			texturedShader.setTexture('texture', animtex);
@@ -183,8 +184,14 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 				'modelMatrix',
 				translate(identity(), [2.0, 0.5, 0.0])
 			);
-			rect1.bindModel(texturedShader.getAttribute('aVertexPosition'));
-			timed.get().bindModel(texturedShader.getAttribute('aTexturePosition'));
+			texturedShader.setModel(
+				'aVertexPosition',
+				rect1
+			);
+			texturedShader.setModel(
+				'aTexturePosition',
+				timed.get()
+			);
 			drawTriangles(gl, rect1.indicesCount);
 
 

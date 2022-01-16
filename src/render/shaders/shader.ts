@@ -3,6 +3,7 @@ import {Mat4, Vec3, Vec4} from '../utils/matrices';
 import {Destroyable} from '../utils/destroyable';
 import {Loadable} from '../utils/loadable';
 import {Texture} from '../textures/texture';
+import {ConvexShape} from '../shapes/convexShape';
 
 let bindedShader: Shader | undefined;
 let bindedTextures: { [k: string]: number } = {};
@@ -121,6 +122,14 @@ export class Shader implements Destroyable, Loadable {
 		this.gl.activeTexture(getTextureLayer(this.gl, idx));
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture.targetTexture);
 		this.gl.uniform1i(this.uniformsCache.get(name), idx);
+	}
+
+	setModel(
+		name: string,
+		value: ConvexShape,
+	) {
+		this.requireBinded();
+		value.bindModel(this.attributesCache.get(name));
 	}
 
 	setMatrix(

@@ -1,5 +1,6 @@
 import {degreesToRadians, rotatePoint, translatePoint} from '../utils/geom';
-import {Vec2} from '../matrices';
+import {Vec2} from '../utils/matrices';
+import {FieldNode} from './fieldNode';
 
 function getCrossPoints(boundRight = 20, boundUp = 20, boundLeft = 0, boundDown = 0, shapeSize = 1) {
 	const crossCenterPoints: Array<Vec2> = [];
@@ -21,7 +22,7 @@ export function getGraph(boundRight?, boundUp?, boundLeft?, boundDown?, shapeSiz
 
 	const fiveShapePoints = crossPoints.map(crossCenter => getCrossFiveShapes(crossCenter, shapeSize)).flat(1);
 	const nodes = fiveShapePoints.map((points) => {
-		return new FiveNode(points);
+		return new FieldNode(points);
 	});
 	const edges: FiveEgde[] = [];
 	nodes.forEach(node => {
@@ -80,26 +81,8 @@ function rotateShape(shape, angleDeg, origin?) {
 	});
 }
 
-class FiveNode {
-	points: Array<Vec2>;
-	nodes: FiveNode[];
-
-	constructor(points: Array<Vec2>) {
-		this.points = points;
-		this.nodes = [];
-	};
-
-	linkToNode(node: FiveNode) {
-		if (this.nodes.includes(node)) {
-			return;
-		}
-		this.nodes.push(node);
-		node.linkToNode(this);
-	}
-}
-
 class FiveEgde {
-	nodes: FiveNode[];
+	nodes: FieldNode[];
 	points: [Vec2, Vec2];
 
 	constructor(points: [Vec2, Vec2]) {
@@ -107,7 +90,7 @@ class FiveEgde {
 		this.nodes = [];
 	}
 
-	addNode(node: FiveNode) {
+	addNode(node: FieldNode) {
 		if (this.nodes.includes(node)) {
 			return;
 		}

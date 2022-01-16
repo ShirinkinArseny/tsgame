@@ -12,6 +12,7 @@ export interface Scene extends Destroyable, Loadable {
 		pressedKeyMap: Map<number, boolean>,
 		cursorX: number,
 		cursorY: number,
+		cursorPressed: boolean,
 		changeScene: (Scene) => void);
 
 	render(w: number, h: number, dt: number);
