@@ -111,7 +111,7 @@ export const splitImage = (image: HTMLImageElement) => {
 		return a;
 	});
 
-	return [maxh, lines];
+	return [maxh + 1, lines];
 
 
 };

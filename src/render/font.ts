@@ -11,6 +11,10 @@ export enum FontStyle {
 	NORMAL, BOLD
 }
 
+export enum Align {
+	LEFT, RIGHT, CENTER
+}
+
 const fontStyles = [FontStyle.NORMAL, FontStyle.BOLD];
 
 const alphabet = [
@@ -19,9 +23,10 @@ const alphabet = [
 	'1234567890.,:;=~\'"!$%^?*()[]<>_+-|/\\',
 	'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ',
 	'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+	'○◐●△◭▲'
 ];
 
-const spaceWidth = 0.4;
+const spaceWidth = 4;
 
 export type Text = {
 	word: string,
@@ -35,10 +40,11 @@ export class Font implements Destroyable, Loadable {
 	private mainRectangle: Rect;
 	private symbolRectangles: { [k: number]: { [k: string]: [number, Rect] } };
 	private shader: LoadableShader;
+	private lineHeight: number;
 
 	constructor(gl: WebGLRenderingContext) {
 		this.gl = gl;
-		this.mainRectangle = new Rect(gl);
+		this.mainRectangle = new Rect(this.gl, 0, 0, 1, 1);
 		this.shader = new LoadableShader(gl, 'font');
 		this.fontImage = new ImageTexture(gl, 'font2.png');
 	}
@@ -49,8 +55,8 @@ export class Font implements Destroyable, Loadable {
 			this.fontImage.load()
 				.then(i => {
 
-					const [ss, lines] = splitImage(i);
-					const scale = ss + 3;
+					const [lineHeight, lines] = splitImage(i);
+					this.lineHeight = lineHeight;
 					const a = Object.fromEntries(
 						fontStyles.map((style, styleIdx) => [
 							style,
@@ -63,13 +69,14 @@ export class Font implements Destroyable, Loadable {
 											if (!bound) {
 												throw new Error('WTF?');
 											}
+											const yy = (lineIdx + styleIdx * alphabet.length) * (lineHeight + 2);
 											const args = [
 												(bound[0]),
-												(lineIdx + styleIdx * alphabet.length) * scale,
-												(bound[1] + 2),
-												((lineIdx + styleIdx * alphabet.length + 1) * scale - 2),
+												yy,
+												(bound[1] + 1),
+												yy + lineHeight,
 											];
-											const w = (bound[1] - bound[0] + 2) / (scale - 2);
+											const w = bound[1] - bound[0] + 1;
 											return [symbol, [w, new Rect(
 												this.gl,
 												...args.map(v => v / i.width)
@@ -106,7 +113,7 @@ export class Font implements Destroyable, Loadable {
 
 			scale(translate(identity(),
 				[x, y, 0.0]
-			), [letter[0], 1.0, 1.0])
+			), [letter[0], this.lineHeight, 1.0])
 		);
 		this.mainRectangle.bindModel(this.shader.getAttribute('aVertexPosition'));
 		letter[1].bindModel(this.shader.getAttribute('aTexturePosition'));
@@ -114,49 +121,63 @@ export class Font implements Destroyable, Loadable {
 		return letter[0];
 	}
 
-	private getStringWidth(str: string, fontStyle: FontStyle): number {
+	getStringWidth(
+		str: string,
+		fontStyle: FontStyle,
+		kerning = 1.0
+	): number {
 		return str.split('').map(s => {
 			const ss = this.symbolRectangles[fontStyle][s];
 			if (!ss) return spaceWidth;
 			return ss[0];
-		}).reduce((a, b) => a + b, 0);
+		}).reduce((a, b) => a + b + kerning, 0);
 	}
 
 	private doDrawString(
 		string: string, x: number, y: number,
-		kerning: number, fontStyle: FontStyle
+		kerning: number, fontStyle: FontStyle,
+		align: Align
 	) {
 		let xx = x;
+		if (align !== Align.LEFT) {
+			const w = this.getStringWidth(string, fontStyle, kerning);
+			if (align === Align.CENTER) {
+				xx -= w/2;
+			} else if (align === Align.RIGHT) {
+				xx -= w;
+			}
+		}
 		for (let i = 0; i < string.length; i++) {
-			xx += this.drawSymbol(string[i], xx, y, fontStyle) * kerning;
+			xx += this.drawSymbol(string[i], xx, y, fontStyle) + kerning;
 		}
 	}
 
-	private initRenderingText(projectionMatrix: Mat4, color: Vec3) {
+	private initRenderingText(projectionMatrix: Mat4, color: Vec4) {
 		this.shader.useProgram();
 		this.shader.setMatrix(
 			'projectionMatrix',
 			projectionMatrix
 		);
-		this.shader.setVector3f('color', color);
+		this.shader.setVector4f('color', color);
 		this.shader.setTexture('texture', this.fontImage);
 	}
 
 	drawString(
 		text: string, x: number, y: number,
 		fontStyle: FontStyle = FontStyle.NORMAL,
-		color: Vec3 = [0, 0, 0],
+		color: Vec4 = [0, 0, 0, 1],
 		projectionMatrix: Mat4,
+		align: Align = Align.LEFT,
 		kerning = 1.0
 	) {
 		this.initRenderingText(projectionMatrix, color);
-		this.doDrawString(text, x, y, kerning, fontStyle);
+		this.doDrawString(text, x, y, kerning, fontStyle, align);
 	}
 
 	drawText(
 		text: Text,
 		x: number, y: number, w: number,
-		color: Vec3 = [0, 0, 0],
+		color: Vec4 = [0, 0, 0, 1],
 		projectionMatrix: Mat4,
 		kerning = 1.0,
 		lineHeight = 1.0
@@ -171,7 +192,7 @@ export class Font implements Destroyable, Loadable {
 				xx = x;
 				yy += lineHeight;
 			}
-			this.doDrawString(word, xx, yy, kerning, fontStyle);
+			this.doDrawString(word, xx, yy, kerning, fontStyle, Align.LEFT);
 			xx += (w + spaceWidth) * kerning;
 		});
 
