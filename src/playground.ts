@@ -1,4 +1,4 @@
-import {identity, multiplyMatVec, ortho, rotate, translate, Vec4} from './render/matrices';
+import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from './render/utils/matrices';
 import {Scene} from './scene';
 import {ImageTexture} from './render/textures/imageTexture';
 import {Font, FontStyle} from './render/font';
@@ -9,7 +9,8 @@ import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 import {Timed} from './render/utils/timed';
 import {range} from './render/utils/lists';
-import {getFiveField, getGraph} from './render/field/fiveField';
+import {FiveNode, getFiveField, getGraph} from './render/field/fiveField';
+import {crossProduct, isPointInConvexShape} from './render/utils/geom';
 
 export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 
@@ -23,13 +24,16 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	let animtex: ImageTexture;
 	let texture: ImageTexture;
 	let font: Font;
-	const fiveShapes = getGraph().map(node => {
-		return new BorderedShape(gl, node.points);
+	let worldToScreen = identity();
+	let screenToWorld = identity();
+	let wx, wy: number;
+	const graph = getGraph();
+	const shapeMap = new Map<FiveNode, BorderedShape>();
+	graph.forEach(node => {
+		const shape = new BorderedShape(gl, node.points);
+		shapeMap.set(node, shape);
 	});
-	// const fiveShapes = getFiveField().map((points) => {
-	// 	return new BorderedShape(gl, points);
-	// });
-	// const myShape = new BorderedShape(gl, [[0, 0], [-0.5, 0.5], [0, 1], [1, 1], [1, 0]]);
+	const rangeToNode = new Map<FiveNode, number>();
 
 	let fps = 0;
 
@@ -39,7 +43,6 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 	}));
 
 	let cx = 0;
-
 
 	return {
 		name: 'Playground',
@@ -96,22 +99,37 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 		update: (dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number) => {
 			const p = 1 - cursorY * cursorY;
 			cx = p * cx + (1 - p) * (cursorX - 0.5) * 2;
+			[wx, wy] = multiplyMatToVec(screenToWorld, [cursorX, cursorY, 0, 1]);
+			const nodeUnderPointer = graph.find(n =>
+				isPointInConvexShape([wx, wy], n.points)
+			);
+			rangeToNode.clear();
+			if (nodeUnderPointer) {
+				const recc = (n: FiveNode, dist: number) => {
+					if (dist < 0) return;
+					const v = rangeToNode.get(n);
+					if (!v || v < dist) {
+						rangeToNode.set(n, dist);
+						n.nodes.forEach(nn => recc(nn, dist - 1));
+					}
+				};
+				recc(nodeUnderPointer, 3);
+			}
 		},
 		render(w: number, h: number, dt: number) {
 
-			function drawShape(shape: BorderedShape, fillColor: Vec4 = [1, 0, 0, 0.8], borderColor: Vec4 = [0, 0, 0, 1]) {
-				colorShader.useProgram();
-				colorShader.setVector4f('fillColor', fillColor);
+			worldToScreen = ortho(-30.0, 30.0, -30.0 * h / w, 30.0 * h / w, 0.0, 100.0);
+			screenToWorld = reverse(worldToScreen);
+
+			function drawShape(node: FiveNode, fillColor: Vec4 = [1, 0, 0, 0.8], borderColor: Vec4 = [0, 0, 0, 1]) {
+				const shape = shapeMap.get(node);
+				if (rangeToNode.get(node)) {
+					colorShader.setVector4f('fillColor', [1, 1, 0, 1]);
+				} else {
+					colorShader.setVector4f('fillColor', fillColor);
+				}
 				colorShader.setVector4f('borderColor', borderColor);
 				colorShader.set1f('borderWidth', 0.05);
-				colorShader.setMatrix(
-					'projectionMatrix',
-					ortho(-30.0, 30.0, -30.0 * h / w, 30.0 * h / w, 0.0, 100.0)
-				);
-				colorShader.setMatrix(
-					'modelMatrix',
-					identity()
-				);
 				shape.bindModel(colorShader.getAttribute('aVertexPosition'));
 				drawTriangles(gl, shape.indicesCount);
 			}
@@ -188,13 +206,14 @@ export const playground: (gl: WebGLRenderingContext) => Scene = (gl) => {
 
 
 			// drawShape(myShape);
-			fiveShapes.forEach((shape) => {
-				drawShape(shape);
+			colorShader.useProgram();
+			colorShader.setMatrix('projectionMatrix', worldToScreen);
+			colorShader.setMatrix('modelMatrix', identity());
+			graph.forEach((node) => {
+				drawShape(node);
 			});
 
 
 		}
 	};
-
 };
-

@@ -1,5 +1,5 @@
 import {degreesToRadians, rotatePoint, translatePoint} from '../utils/geom';
-import {Vec2} from '../matrices';
+import {Vec2} from '../utils/matrices';
 
 export const getFiveField = (width: number = 3, height: number = 3, bigSideSize: number = 1) => {
 
@@ -92,7 +92,7 @@ function rotateShape(shape, angleDeg, origin?) {
 	});
 }
 
-class FiveNode {
+export class FiveNode {
 	points: Array<Vec2>;
 	angleGrad: number;
 	nodes: FiveNode[];
