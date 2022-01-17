@@ -44,7 +44,7 @@ export class GameFieldScene implements Scene {
 	pathToMove: FieldNode[];
 
 	private selectedNode() {
-		return this.gameField.getCharacterPosition(this.selectedCharacter);
+		return this.gameField.getCharacterNode(this.selectedCharacter);
 	}
 
 	constructor(
@@ -137,7 +137,7 @@ export class GameFieldScene implements Scene {
 		this.screenToPx = reverse(this.pxToScreen);
 		const ptr = multiplyMatToVec(reverse(this.pxToScreen), [this.x, this.y, 0, 1]);
 
-		this.gameField.getCharacters().forEach(([character, node]) => {
+		this.gameField.getCharacters().forEach((character) => {
 			this.texturedShader.useProgram();
 			this.texturedShader.setTexture('texture', this.animtex);
 			this.texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
@@ -149,7 +149,7 @@ export class GameFieldScene implements Scene {
 				'aTexturePosition',
 				this.timed.get()
 			);
-			let c = toVec4(center(node.points));
+			let c = toVec4(this.gameField.getCharacterPosition(character));
 			const rot = rotate(identity(), angle, [0, 0, 1]);
 			c = multiplyMatToVec(rot, c) as Vec4;
 			this.texturedShader.setMatrix(
