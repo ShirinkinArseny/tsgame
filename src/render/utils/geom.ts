@@ -1,4 +1,4 @@
-import {getRotateMat2, multiplyMatToVec, Vec2, Vec3} from './matrices';
+import {getRotateMat2, multiplyMatToVec, Vec2, Vec3, Vec4} from './matrices';
 
 export const length = (v: Vec2) => {
 	return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -78,4 +78,24 @@ export function isPointInConvexShape(
 		if (Math.sign(c[2]) !== sign) return false;
 	}
 	return true;
+}
+
+export function toVec4(vec: number[]): Vec4 {
+	if (vec.length === 4) return vec as Vec4;
+	if (vec.length > 4) return vec.slice(0, 3) as Vec4;
+	const res = [...vec];
+	while (res.length < 3) {
+		res.push(0);
+	}
+	while (res.length < 4) {
+		res.push(1);
+	}
+	return res as Vec4;
+}
+
+export function center(points: Vec2[]): Vec2 {
+	return points.reduce((a, b) => [
+		a[0] + b[0],
+		a[1] + b[1]
+	], [0, 0]).map(v => v / points.length) as Vec2;
 }

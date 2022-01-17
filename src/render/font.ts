@@ -152,14 +152,18 @@ export class Font implements Destroyable, Loadable {
 		}
 	}
 
+	private initRenderingTextColor(color: Vec4) {
+		this.shader.setVector4f('color', color);
+	}
+
 	private initRenderingText(projectionMatrix: Mat4, color: Vec4) {
 		this.shader.useProgram();
 		this.shader.setMatrix(
 			'projectionMatrix',
 			projectionMatrix
 		);
-		this.shader.setVector4f('color', color);
 		this.shader.setTexture('texture', this.fontImage);
+		this.initRenderingTextColor(color);
 	}
 
 	drawString(
@@ -168,9 +172,14 @@ export class Font implements Destroyable, Loadable {
 		color: Vec4 = [0, 0, 0, 1],
 		projectionMatrix: Mat4,
 		align: Align = Align.LEFT,
-		kerning = 1.0
+		kerning = 1.0,
+		shadowColor: Vec4 | undefined = undefined
 	) {
-		this.initRenderingText(projectionMatrix, color);
+		this.initRenderingText(projectionMatrix, shadowColor || color);
+		if (shadowColor) {
+			this.doDrawString(text, x+1, y+1, kerning, fontStyle, align);
+			this.initRenderingTextColor(color);
+		}
 		this.doDrawString(text, x, y, kerning, fontStyle, align);
 	}
 

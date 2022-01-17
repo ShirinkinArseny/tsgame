@@ -1,4 +1,4 @@
-import {Vec2} from '../utils/matrices';
+import {Vec2} from '../../render/utils/matrices';
 
 export class FieldNode {
 	points: Array<Vec2>;

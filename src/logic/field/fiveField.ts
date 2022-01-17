@@ -1,5 +1,5 @@
-import {degreesToRadians, rotatePoint, translatePoint} from '../utils/geom';
-import {Vec2} from '../utils/matrices';
+import {degreesToRadians, rotatePoint, translatePoint} from '../../render/utils/geom';
+import {Vec2} from '../../render/utils/matrices';
 import {FieldNode} from './fieldNode';
 
 function getCrossPoints(boundRight = 20, boundUp = 20, boundLeft = 0, boundDown = 0, shapeSize = 1) {

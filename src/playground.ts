@@ -9,9 +9,9 @@ import {ConvexShape} from './render/shapes/convexShape';
 import {BorderedShape} from './render/shapes/borderedShape';
 import {Timed} from './render/utils/timed';
 import {range} from './render/utils/lists';
-import {getGraph} from './render/field/fiveField';
+import {getGraph} from './logic/field/fiveField';
 import {isPointInConvexShape} from './render/utils/geom';
-import {FieldNode} from './render/field/fieldNode';
+import {FieldNode} from './logic/field/fieldNode';
 
 export const loremIpsum = 'Значимость этих проблем настолько очевидна, что рамки и место обучения кадров в значительной степени обуславливает создание существенных финансовых и административных условий. Задача организации, в особенности же сложившаяся структура организации влечет за собой процесс внедрения и модернизации направлений прогрессивного развития. Не следует, однако забывать, что рамки и место обучения кадров требуют от нас анализа существенных финансовых и административных условий.'
 

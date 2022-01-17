@@ -1,11 +1,18 @@
 import {Scene} from './scene';
 import {tryDetectError} from './render/utils/gl';
-import {GameFieldScene} from './render/gameFieldScene';
-import {GameField} from './gameField';
+import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
+import {GameField} from './logic/gameField';
 import {Pixelized} from './render/pixelized';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
+
+enum CursorPressedState {
+	Nothing,
+	JustPressed,
+	PressedAndHandled,
+	ReleasedBeforeHandle
+}
 
 function main() {
 
@@ -21,7 +28,7 @@ function main() {
 	const pressedKeysMap = new Map<number, boolean>();
 	let cursorX = 0;
 	let cursorY = 0;
-	let cursorPressed = false;
+	let cursorPressed = CursorPressedState.Nothing;
 	document.addEventListener('keydown', event => {
 		pressedKeysMap[event.keyCode] = true;
 	}, false);
@@ -33,10 +40,14 @@ function main() {
 		cursorY = event.y;
 	});
 	document.addEventListener('mousedown', event => {
-		cursorPressed = true;
+		cursorPressed = CursorPressedState.JustPressed;
 	});
 	document.addEventListener('mouseup', event => {
-		cursorPressed = false;
+		if (cursorPressed === CursorPressedState.PressedAndHandled) {
+			cursorPressed = CursorPressedState.Nothing;
+		} else {
+			cursorPressed = CursorPressedState.ReleasedBeforeHandle;
+		}
 	});
 
 	scene = new Pixelized(gl, new GameFieldScene(gl, new GameField()));
@@ -64,6 +75,15 @@ function main() {
 			prevScene = scene;
 		}
 		init.then(() => {
+			const isCursorPressed = cursorPressed !== CursorPressedState.Nothing;
+			let isCursorClicked = false;
+			if (cursorPressed === CursorPressedState.JustPressed) {
+				cursorPressed = CursorPressedState.PressedAndHandled;
+				isCursorClicked = true;
+			} else if (cursorPressed === CursorPressedState.ReleasedBeforeHandle) {
+				cursorPressed = CursorPressedState.Nothing;
+				isCursorClicked = true;
+			}
 			const now = new Date().getTime();
 			const diff = (now - prev) / 1000;
 			prev = now;
@@ -81,7 +101,8 @@ function main() {
 			scene.update(diff, pressedKeysMap,
 				cursorX / displayWidth * 2 - 1,
 				cursorY / displayHeight * 2 - 1,
-				cursorPressed,
+				isCursorPressed,
+				isCursorClicked,
 				(s: Scene) => {
 					scene = s;
 				});

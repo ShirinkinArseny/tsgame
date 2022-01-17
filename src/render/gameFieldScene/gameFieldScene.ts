@@ -1,17 +1,19 @@
-import {Scene} from '../scene';
-import {GameField} from '../gameField';
-import {BorderedShape} from './shapes/borderedShape';
-import {FieldNode} from './field/fieldNode';
-import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from './utils/matrices';
-import {LoadableShader} from './shaders/loadableShader';
-import {drawTriangles} from './utils/gl';
-import {Rect} from './shapes/rect';
-import {isPointInConvexShape} from './utils/geom';
-import {Timed} from './utils/timed';
-import {ImageTexture} from './textures/imageTexture';
-import {range} from './utils/lists';
-import {Align, Font, FontStyle} from './font';
-import {Button} from './button';
+import {Scene} from '../../scene';
+import {GameField} from '../../logic/gameField';
+import {BorderedShape} from '../shapes/borderedShape';
+import {FieldNode} from '../../logic/field/fieldNode';
+import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from '../utils/matrices';
+import {LoadableShader} from '../shaders/loadableShader';
+import {drawTriangles} from '../utils/gl';
+import {Rect} from '../shapes/rect';
+import {center, isPointInConvexShape, toVec4} from '../utils/geom';
+import {Timed} from '../utils/timed';
+import {ImageTexture} from '../textures/imageTexture';
+import {range} from '../utils/lists';
+import {Align, Font, FontStyle} from '../font';
+import {Button} from '../button';
+import {hpbar} from './hpbar';
+import {Character} from '../../logic/character';
 
 
 export class GameFieldScene implements Scene {
@@ -24,7 +26,6 @@ export class GameFieldScene implements Scene {
 	texturedShader: LoadableShader;
 	rect: Rect;
 	hoveredNode: FieldNode;
-	followedNode: FieldNode;
 	worldToScreen: Mat4;
 	screenToWorld: Mat4;
 	pxToScreen: Mat4;
@@ -39,6 +40,12 @@ export class GameFieldScene implements Scene {
 	x: number;
 	y: number;
 	highlight: Map<FieldNode, Vec4>;
+	selectedCharacter: Character;
+	pathToMove: FieldNode[];
+
+	private selectedNode() {
+		return this.gameField.getCharacterPosition(this.selectedCharacter);
+	}
 
 	constructor(
 		gl: WebGLRenderingContext,
@@ -68,11 +75,12 @@ export class GameFieldScene implements Scene {
 			...this.rects,
 		], 100);
 		this.animtex = new ImageTexture(gl, 'ball-with-ears.png');
-		gameField.graph.forEach(node => {
+		gameField.getNodes().forEach(node => {
 			const shape = new BorderedShape(gl, node.points);
 			this.nodeToShapeMap.set(node, shape);
 		});
 		this.highlight = new Map();
+		this.pathToMove = [];
 	}
 
 	load(): Promise<any> {
@@ -96,7 +104,8 @@ export class GameFieldScene implements Scene {
 
 	private drawShape(node: FieldNode, fillColor: Vec4 = [0.8, 0.8, 0.8, 1], borderColor: Vec4 = [1, 1, 1, 1]) {
 		const shape = this.nodeToShapeMap.get(node);
-		if (node === this.hoveredNode) {
+		const isSelectedNode = this.selectedNode() === node;
+		if (isSelectedNode) {
 			this.colorShader.setVector4f('borderColor', [0, 0.8, 0, 1]);
 			this.colorShader.set1f('borderWidth', 3);
 		} else {
@@ -119,7 +128,7 @@ export class GameFieldScene implements Scene {
 		this.colorShader.useProgram();
 		this.colorShader.setMatrix('projectionMatrix', this.worldToScreen);
 		this.colorShader.setMatrix('modelMatrix', identity());
-		this.gameField.graph.forEach((node) => {
+		this.gameField.getNodes().forEach((node) => {
 			this.drawShape(node);
 		});
 
@@ -128,21 +137,10 @@ export class GameFieldScene implements Scene {
 		this.screenToPx = reverse(this.pxToScreen);
 		const ptr = multiplyMatToVec(reverse(this.pxToScreen), [this.x, this.y, 0, 1]);
 
-		if (this.followedNode) {
-			let center = this.followedNode.points.reduce((a, b) => [
-				a[0] + b[0],
-				a[1] + b[1],
-				0, 1
-			], [0, 0, 0, 1]).map(v => v / this.followedNode.points.length);
-			const rot = rotate(identity(), angle, [0, 0, 1]);
-			center = multiplyMatToVec(rot, center) as Vec4;
+		this.gameField.getCharacters().forEach(([character, node]) => {
 			this.texturedShader.useProgram();
 			this.texturedShader.setTexture('texture', this.animtex);
 			this.texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-			this.texturedShader.setMatrix(
-				'modelMatrix',
-				translate(identity(), [center[0], center[1], 0]),
-			);
 			this.texturedShader.setModel(
 				'aVertexPosition',
 				this.rect
@@ -151,24 +149,25 @@ export class GameFieldScene implements Scene {
 				'aTexturePosition',
 				this.timed.get()
 			);
+			let c = toVec4(center(node.points));
+			const rot = rotate(identity(), angle, [0, 0, 1]);
+			c = multiplyMatToVec(rot, c) as Vec4;
+			this.texturedShader.setMatrix(
+				'modelMatrix',
+				translate(identity(), [c[0], c[1], 0]),
+			);
 			drawTriangles(this.gl, this.rect.indicesCount);
 			this.font.drawString(
-				'Mike ▲▲▲◭△',
-				center[0] + 1, center[1] - 29,
-				FontStyle.BOLD,
-				[0, 0, 0, 0.7],
-				this.pxToScreen,
-				Align.CENTER
-			);
-			this.font.drawString(
-				'Mike ▲▲▲◭△',
-				center[0], center[1] - 30,
+				character.name + ' ' + hpbar(character.hp, character.maxHp),
+				c[0], c[1] - 30,
 				FontStyle.BOLD,
 				[1, 0, 0, 1],
 				this.pxToScreen,
-				Align.CENTER
+				Align.CENTER,
+				1,
+				[0, 0, 0, 0.7]
 			);
-		}
+		});
 
 		let x = -120;
 		const y = h / 2 - 23;
@@ -208,35 +207,35 @@ export class GameFieldScene implements Scene {
 
 	private updatePath() {
 		this.highlight.clear();
-		if (this.followedNode && this.hoveredNode) {
-			const path = this.gameField.findPath(this.followedNode, this.hoveredNode);
-			path.forEach(n => {
-				this.highlight.set(n, [0, 1, 0, 1]);
-			});
-		}
-
+		if (!this.selectedCharacter || !this.hoveredNode) return;
+		this.pathToMove = this.gameField.findPath(this.selectedNode(), this.hoveredNode);
+		this.pathToMove.forEach(f => this.highlight.set(f, [0.8, 1.0, 0.8, 1.0]));
 	}
 
-	update(dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number, cursorPressed: boolean, changeScene: (Scene) => void) {
+	update(dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number,
+		cursorPressed: boolean,
+		cursorClicked: boolean,
+		changeScene: (Scene) => void) {
 		this.button.update(dt, pressedKeyMap, this.screenToPx, cursorX, cursorY, cursorPressed);
 		[this.wx, this.wy] = multiplyMatToVec(this.screenToWorld, [cursorX, cursorY, 0, 1]);
 		[this.x, this.y] = [cursorX, cursorY];
-		let doUpdatePath = false;
-		const oldHovered = this.hoveredNode;
-		this.hoveredNode = this.gameField.graph.find((node) =>
+		const oldHoveredNode = this.hoveredNode;
+		const oldSelectedNode = this.selectedNode();
+		this.hoveredNode = this.gameField.getNodes().find((node) =>
 			isPointInConvexShape([this.wx, this.wy], node.points)
 		);
-		if (oldHovered !== this.hoveredNode) {
-			doUpdatePath = true;
-		}
-		if (cursorPressed) {
-			const oldFollowedNode = this.followedNode;
-			this.followedNode = this.hoveredNode;
-			if (oldFollowedNode !== this.followedNode) {
-				doUpdatePath = true;
+		if (cursorClicked) {
+			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
+			if (newSelectedCharacter) {
+				this.selectedCharacter = newSelectedCharacter;
+			} else {
+				if (this.selectedCharacter && this.hoveredNode) {
+					this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
+					this.highlight.clear();
+				}
 			}
 		}
-		if (doUpdatePath) {
+		if (oldHoveredNode !== this.hoveredNode || this.selectedNode() !== oldSelectedNode) {
 			this.updatePath();
 		}
 	}

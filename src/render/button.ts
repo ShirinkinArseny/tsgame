@@ -1,12 +1,11 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
-import {Font, FontStyle} from './font';
+import {Align, Font, FontStyle} from './font';
 import {Rect} from './shapes/rect';
 import {identity, Mat4, multiplyMatToVec, scale, translate, Vec4} from './utils/matrices';
 import {LoadableShader} from './shaders/loadableShader';
 import {drawTriangles} from './utils/gl';
-import {isPointInConvexShape} from './utils/geom';
 
 
 export class Button implements Loadable, Destroyable {
@@ -107,18 +106,13 @@ export class Button implements Loadable, Destroyable {
 		this.font.drawString(
 			text,
 			x + 7,
-			y + 3,
-			FontStyle.BOLD,
-			a,
-			projMatrix
-		);
-		this.font.drawString(
-			text,
-			x + 6,
 			y + 2,
 			FontStyle.BOLD,
 			hovered ? c : b,
-			projMatrix
+			projMatrix,
+			Align.LEFT,
+			1,
+			a
 		);
 
 		return w + 12;
