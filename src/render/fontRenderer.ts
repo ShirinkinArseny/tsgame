@@ -1,10 +1,9 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
 import {Rect} from './shapes/rect';
-import {identity, Mat4, ortho, scale, translate, Vec3, Vec4} from './utils/matrices';
+import {identity, Mat4, scale, translate, Vec4} from './utils/matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
-import {drawTriangles} from './utils/gl';
 import {Loadable} from './utils/loadable';
 
 export enum FontStyle {
@@ -33,20 +32,18 @@ export type Text = {
 	fontStyle: FontStyle
 }[];
 
-export class Font implements Destroyable, Loadable {
+export class FontRenderer implements Destroyable, Loadable {
 
-	private readonly gl: WebGLRenderingContext;
 	private fontImage: ImageTexture;
 	private mainRectangle: Rect;
 	private symbolRectangles: { [k: number]: { [k: string]: [number, Rect] } };
 	private shader: LoadableShader;
 	private lineHeight: number;
 
-	constructor(gl: WebGLRenderingContext) {
-		this.gl = gl;
-		this.mainRectangle = new Rect(this.gl, 0, 0, 1, 1);
-		this.shader = new LoadableShader(gl, 'font');
-		this.fontImage = new ImageTexture(gl, 'font2.png');
+	constructor() {
+		this.mainRectangle = new Rect(0, 0, 1, 1);
+		this.shader = new LoadableShader('font');
+		this.fontImage = new ImageTexture('font2.png');
 	}
 
 	load() {
@@ -78,7 +75,6 @@ export class Font implements Destroyable, Loadable {
 											];
 											const w = bound[1] - bound[0] + 1;
 											return [symbol, [w, new Rect(
-												this.gl,
 												...args.map(v => v / i.width)
 											)]];
 										});
@@ -115,9 +111,9 @@ export class Font implements Destroyable, Loadable {
 				[x, y, 0.0]
 			), [letter[0], this.lineHeight, 1.0])
 		);
-		this.mainRectangle.bindModel(this.shader.getAttribute('aVertexPosition'));
-		letter[1].bindModel(this.shader.getAttribute('aTexturePosition'));
-		drawTriangles(this.gl, this.mainRectangle.indicesCount);
+		this.shader.setModel('aVertexPosition', this.mainRectangle);
+		this.shader.setModel('aTexturePosition', letter[1]);
+		this.shader.draw();
 		return letter[0];
 	}
 
@@ -142,7 +138,7 @@ export class Font implements Destroyable, Loadable {
 		if (align !== Align.LEFT) {
 			const w = this.getStringWidth(string, fontStyle, kerning);
 			if (align === Align.CENTER) {
-				xx -= w/2;
+				xx -= w / 2;
 			} else if (align === Align.RIGHT) {
 				xx -= w;
 			}
@@ -177,7 +173,7 @@ export class Font implements Destroyable, Loadable {
 	) {
 		this.initRenderingText(projectionMatrix, shadowColor || color);
 		if (shadowColor) {
-			this.doDrawString(text, x+1, y+1, kerning, fontStyle, align);
+			this.doDrawString(text, x + 1, y + 1, kerning, fontStyle, align);
 			this.initRenderingTextColor(color);
 		}
 		this.doDrawString(text, x, y, kerning, fontStyle, align);

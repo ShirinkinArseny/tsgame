@@ -1,5 +1,6 @@
 import {Texture} from './texture';
 import {Loadable} from '../utils/loadable';
+import {gl} from '../../globals';
 
 export class ImageTexture extends Texture implements Loadable {
 
@@ -7,29 +8,29 @@ export class ImageTexture extends Texture implements Loadable {
 	public width: number;
 	public height: number;
 
-	constructor(gl: WebGLRenderingContext, url: string) {
-		super(gl, gl.createTexture());
+	constructor(url: string) {
+		super(gl.createTexture());
 		this.url = '/assets/images/' + url;
 	}
 
 	load(): Promise<HTMLImageElement> {
 		const level = 0;
-		const internalFormat = this.gl.RGBA;
-		const srcFormat = this.gl.RGBA;
-		const srcType = this.gl.UNSIGNED_BYTE;
+		const internalFormat = gl.RGBA;
+		const srcFormat = gl.RGBA;
+		const srcType = gl.UNSIGNED_BYTE;
 		const image = new Image();
-		return new Promise((res, rej) => {
+		return new Promise((res) => {
 			image.onload = () => {
 				this.width = image.width;
 				this.height = image.height;
-				this.gl.bindTexture(this.gl.TEXTURE_2D, this.targetTexture);
-				this.gl.texImage2D(this.gl.TEXTURE_2D, level, internalFormat,
+				gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+				gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
 					srcFormat, srcType, image);
-				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER,
-					this.gl.NEAREST);
-				this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER,
-					this.gl.NEAREST);
-				this.gl.generateMipmap(this.gl.TEXTURE_2D);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+					gl.NEAREST);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER,
+					gl.NEAREST);
+				gl.generateMipmap(gl.TEXTURE_2D);
 				res(image);
 			};
 			image.src = this.url;
@@ -37,7 +38,7 @@ export class ImageTexture extends Texture implements Loadable {
 	}
 
 	destroy() {
-		this.gl.deleteTexture(this.targetTexture);
+		gl.deleteTexture(this.targetTexture);
 	}
 
 }

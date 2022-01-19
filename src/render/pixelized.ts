@@ -1,39 +1,28 @@
 import {Scene} from '../scene';
-import {LoadableShader} from './shaders/loadableShader';
 import {FBO} from './textures/fbo';
-import {Rect} from './shapes/rect';
-import {identity, ortho, translate} from './utils/matrices';
-import {drawTriangles} from './utils/gl';
+import {identity, ortho} from './utils/matrices';
+import {defaultRect, gl, texturedShader} from '../globals';
 
 
 export class Pixelized implements Scene {
 
 	name: string = 'Pixelized';
-	gl: WebGLRenderingContext;
 	scene: Scene;
-	texturedShader: LoadableShader;
 	fbo: FBO;
-	rect: Rect;
 
-	constructor(gl: WebGLRenderingContext, scene: Scene) {
-		this.gl = gl;
+	constructor(scene: Scene) {
 		this.scene = scene;
-		this.texturedShader = new LoadableShader(gl, 'textured');
-		this.fbo = new FBO(gl, 256, 256);
-		this.rect = new Rect(gl);
+		this.fbo = new FBO(256, 256);
 	}
 
 	destroy() {
 		this.scene.destroy();
-		this.texturedShader.destroy();
 		this.fbo.destroy();
-		this.rect.destroy();
 	}
 
 	load(): Promise<any> {
 		return Promise.all([
 			this.scene.load(),
-			this.texturedShader.load()
 		]);
 	}
 
@@ -44,7 +33,7 @@ export class Pixelized implements Scene {
 
 		if (fw !== this.fbo.width || fh !== this.fbo.height) {
 			this.fbo.destroy();
-			this.fbo = new FBO(this.gl, fw, fh);
+			this.fbo = new FBO(fw, fh);
 		}
 
 		this.fbo.bind();
@@ -52,17 +41,17 @@ export class Pixelized implements Scene {
 		this.fbo.unbind();
 
 
-		this.gl.viewport(0, 0, w, h);
-		this.texturedShader.useProgram();
-		this.texturedShader.setTexture('texture', this.fbo);
-		this.texturedShader.setMatrix(
+		gl.viewport(0, 0, w, h);
+		texturedShader.useProgram();
+		texturedShader.setTexture('texture', this.fbo);
+		texturedShader.setMatrix(
 			'projectionMatrix',
 			ortho(0, 1, 1, 0, 0.0, 100.0)
 		);
-		this.texturedShader.setMatrix('modelMatrix', identity());
-		this.texturedShader.setModel('aTexturePosition', this.rect);
-		this.texturedShader.setModel('aVertexPosition', this.rect);
-		drawTriangles(this.gl, this.rect.indicesCount);
+		texturedShader.setMatrix('modelMatrix', identity());
+		texturedShader.setModel('aTexturePosition', defaultRect);
+		texturedShader.setModel('aVertexPosition', defaultRect);
+		texturedShader.draw();
 
 
 	}

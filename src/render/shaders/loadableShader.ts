@@ -7,11 +7,9 @@ const load = (url: string) => {
 export class LoadableShader extends Shader {
 
 	constructor(
-		gl: WebGLRenderingContext,
 		url: string
 	) {
 		super(
-			gl,
 			load('/assets/shaders/' + url + '/vertex.glsl'),
 			load('/assets/shaders/' + url + '/fragment.glsl')
 		);

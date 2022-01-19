@@ -4,13 +4,15 @@ import {Destroyable} from '../utils/destroyable';
 import {Loadable} from '../utils/loadable';
 import {Texture} from '../textures/texture';
 import {ConvexShape} from '../shapes/convexShape';
+import {gl} from '../../globals';
 
 let bindedShader: Shader | undefined;
 let bindedTextures: { [k: string]: number } = {};
 let bindedTexturesCounter = 0;
 
+let bindedModelIndicesCount: number = undefined;
 
-const getTextureLayer = (gl: WebGLRenderingContext, index: number) => {
+const getTextureLayer = (index: number) => {
 	if (index >= 32) {
 		throw new Error('Do you really need this much textures?');
 	}
@@ -20,7 +22,6 @@ const getTextureLayer = (gl: WebGLRenderingContext, index: number) => {
 export class Shader implements Destroyable, Loadable {
 
 	private loadShader(type: number, source: string): WebGLShader {
-		const gl = this.gl;
 		const shader = gl.createShader(type);
 
 		gl.shaderSource(shader, source);
@@ -43,14 +44,11 @@ export class Shader implements Destroyable, Loadable {
 	private program: WebGLProgram;
 	private attributesCache: SimpleCache<number>;
 	private uniformsCache: SimpleCache<WebGLUniformLocation>;
-	private gl: WebGLRenderingContext;
 
 	constructor(
-		gl: WebGLRenderingContext,
 		vertex: Promise<string>,
 		fragment: Promise<string>,
 	) {
-		this.gl = gl;
 		this.vertexPromise = vertex;
 		this.fragmentPromise = fragment;
 	}
@@ -61,38 +59,38 @@ export class Shader implements Destroyable, Loadable {
 			this.fragmentPromise
 		]).then(([vertexSource, fragmentSource]) => {
 			this.vertexShader = this.loadShader(
-				this.gl.VERTEX_SHADER,
+				gl.VERTEX_SHADER,
 				vertexSource,
 			);
 			this.fragmentShader = this.loadShader(
-				this.gl.FRAGMENT_SHADER,
+				gl.FRAGMENT_SHADER,
 				fragmentSource,
 			);
 
-			this.program = this.gl.createProgram();
-			this.gl.attachShader(this.program, this.vertexShader);
-			this.gl.attachShader(this.program, this.fragmentShader);
-			this.gl.linkProgram(this.program);
-			if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+			this.program = gl.createProgram();
+			gl.attachShader(this.program, this.vertexShader);
+			gl.attachShader(this.program, this.fragmentShader);
+			gl.linkProgram(this.program);
+			if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
 				throw new Error(
 					'Unable to initialize the shader program: ' +
-					this.gl.getProgramInfoLog(this.program),
+					gl.getProgramInfoLog(this.program),
 				);
 			}
 
 			this.attributesCache = new SimpleCache((name) =>
-				this.gl.getAttribLocation(this.program, name),
+				gl.getAttribLocation(this.program, name),
 			);
 			this.uniformsCache = new SimpleCache((name) =>
-				this.gl.getUniformLocation(this.program, name),
+				gl.getUniformLocation(this.program, name),
 			);
 		});
 	}
 
 	destroy() {
-		this.gl.deleteProgram(this.program);
-		this.gl.deleteShader(this.vertexShader);
-		this.gl.deleteShader(this.fragmentShader);
+		gl.deleteProgram(this.program);
+		gl.deleteShader(this.vertexShader);
+		gl.deleteShader(this.fragmentShader);
 	}
 
 	getAttribute(name: string): number {
@@ -100,10 +98,11 @@ export class Shader implements Destroyable, Loadable {
 	}
 
 	useProgram() {
-		this.gl.useProgram(this.program);
+		gl.useProgram(this.program);
 		bindedShader = this;
 		bindedTextures = {};
 		bindedTexturesCounter = -1;
+		bindedModelIndicesCount = undefined;
 	}
 
 	private requireBinded() {
@@ -119,9 +118,9 @@ export class Shader implements Destroyable, Loadable {
 		this.requireBinded();
 		const idx = bindedTextures[name] || ++bindedTexturesCounter;
 		bindedTextures[name] = idx;
-		this.gl.activeTexture(getTextureLayer(this.gl, idx));
-		this.gl.bindTexture(this.gl.TEXTURE_2D, texture.targetTexture);
-		this.gl.uniform1i(this.uniformsCache.get(name), idx);
+		gl.activeTexture(getTextureLayer(idx));
+		gl.bindTexture(gl.TEXTURE_2D, texture.targetTexture);
+		gl.uniform1i(this.uniformsCache.get(name), idx);
 	}
 
 	setModel(
@@ -129,6 +128,7 @@ export class Shader implements Destroyable, Loadable {
 		value: ConvexShape,
 	) {
 		this.requireBinded();
+		bindedModelIndicesCount = value.indicesCount;
 		value.bindModel(this.attributesCache.get(name));
 	}
 
@@ -137,7 +137,7 @@ export class Shader implements Destroyable, Loadable {
 		value: Mat4,
 	) {
 		this.requireBinded();
-		this.gl.uniformMatrix4fv(
+		gl.uniformMatrix4fv(
 			this.uniformsCache.get(name),
 			false,
 			value,
@@ -146,22 +146,31 @@ export class Shader implements Destroyable, Loadable {
 
 	setVector4f(name: string, value: Vec4) {
 		this.requireBinded();
-		this.gl.uniform4fv(this.uniformsCache.get(name), value);
+		gl.uniform4fv(this.uniformsCache.get(name), value);
 	}
 
 	setVector3f(name: string, value: Vec3) {
 		this.requireBinded();
-		this.gl.uniform3fv(this.uniformsCache.get(name), value);
+		gl.uniform3fv(this.uniformsCache.get(name), value);
 	}
 
 	set1i(name: string, value: number) {
 		this.requireBinded();
-		this.gl.uniform1i(this.uniformsCache.get(name), value);
+		gl.uniform1i(this.uniformsCache.get(name), value);
 	}
 
 	set1f(name: string, value: number) {
 		this.requireBinded();
-		this.gl.uniform1f(this.uniformsCache.get(name), value);
+		gl.uniform1f(this.uniformsCache.get(name), value);
+	}
+
+	draw() {
+		gl.drawElements(
+			gl.TRIANGLES,
+			bindedModelIndicesCount,
+			gl.UNSIGNED_SHORT,
+			0,
+		);
 	}
 
 }

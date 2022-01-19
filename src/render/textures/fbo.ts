@@ -1,4 +1,5 @@
 import {Texture} from './texture';
+import {gl} from '../../globals';
 
 export class FBO extends Texture {
 
@@ -9,11 +10,10 @@ export class FBO extends Texture {
 	readonly height: number;
 
 	constructor(
-		gl: WebGLRenderingContext,
 		width: number,
 		height: number
 	) {
-		super(gl, gl.createTexture());
+		super(gl.createTexture());
 		this.width = width;
 		this.height = height;
 		gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
@@ -55,25 +55,25 @@ export class FBO extends Texture {
 		gl.framebufferRenderbuffer(gl.FRAMEBUFFER,
 			gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER,
 			this.depthBuffer);
-		gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
 	bind() {
-		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
 
-		this.gl.viewport(0, 0, this.width, this.height);
+		gl.viewport(0, 0, this.width, this.height);
 
-		this.gl.clearColor(0, 0, 0, 1);
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT |
-			this.gl.DEPTH_BUFFER_BIT);
+		gl.clearColor(0, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT |
+			gl.DEPTH_BUFFER_BIT);
 	}
 
 	unbind() {
-		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
 	destroy() {
-		this.gl.deleteTexture(this.targetTexture);
+		gl.deleteTexture(this.targetTexture);
 	}
 
 }

@@ -3,6 +3,9 @@ import {tryDetectError} from './render/utils/gl';
 import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {Pixelized} from './render/pixelized';
+import {
+	gl, initGlobals, loadGlobals,
+} from './globals';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
@@ -18,7 +21,8 @@ function main() {
 
 
 	const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-	const gl = canvas.getContext('webgl2');
+
+	initGlobals(canvas.getContext('webgl2'));
 
 	if (!gl) {
 		alert('Unable to initialize WebGL. Your browser or machine may not support it.');
@@ -39,10 +43,10 @@ function main() {
 		cursorX = event.x;
 		cursorY = event.y;
 	});
-	document.addEventListener('mousedown', event => {
+	document.addEventListener('mousedown', () => {
 		cursorPressed = CursorPressedState.JustPressed;
 	});
-	document.addEventListener('mouseup', event => {
+	document.addEventListener('mouseup', () => {
 		if (cursorPressed === CursorPressedState.PressedAndHandled) {
 			cursorPressed = CursorPressedState.Nothing;
 		} else {
@@ -50,7 +54,7 @@ function main() {
 		}
 	});
 
-	scene = new Pixelized(gl, new GameFieldScene(gl, new GameField()));
+	scene = new Pixelized(new GameFieldScene(new GameField()));
 
 	let prev = new Date().getTime();
 
@@ -96,7 +100,7 @@ function main() {
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 			scene.render(displayWidth, displayHeight, diff);
-			tryDetectError(gl);
+			tryDetectError();
 
 			scene.update(diff, pressedKeysMap,
 				cursorX / displayWidth * 2 - 1,
@@ -113,7 +117,10 @@ function main() {
 		});
 	};
 
-	render();
+	loadGlobals().then(() => {
+		render();
+	});
+
 
 }
 

@@ -37,7 +37,7 @@ export class GameField {
 	}
 
 	getCharacters() {
-		return this.characters.map((a, _) => a) as Character[];
+		return this.characters.map((a) => a) as Character[];
 	}
 
 	getNodes() {

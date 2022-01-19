@@ -1,13 +1,6 @@
-export const drawTriangles = (gl: WebGLRenderingContext, count: number) => {
-	gl.drawElements(
-		gl.TRIANGLES,
-		count,
-		gl.UNSIGNED_SHORT,
-		0,
-	);
-};
+import {gl} from '../../globals';
 
-export const tryDetectError = (gl: WebGLRenderingContext) => {
+export const tryDetectError = () => {
 	const errorCode = gl.getError();
 	if (errorCode !== gl.NO_ERROR) {
 		console.error(`GL ERROR OCCURED, CODE=${errorCode}`);

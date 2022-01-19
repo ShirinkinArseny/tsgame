@@ -9,7 +9,6 @@ export class BorderedShape extends ConvexShape {
 	bounds: [number, number][];
 
 	constructor(
-		gl: WebGLRenderingContext,
 		bounds: [number, number][]
 	) {
 		const center = bounds.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]).map(v => v / bounds.length) as Vec2;
@@ -29,7 +28,6 @@ export class BorderedShape extends ConvexShape {
 		});
 		const indices = range(0, triangles.length - 1);
 		super(
-			gl,
 			triangles,
 			indices
 		);

@@ -3,27 +3,22 @@ import {GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
 import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from '../utils/matrices';
-import {LoadableShader} from '../shaders/loadableShader';
-import {drawTriangles} from '../utils/gl';
 import {Rect} from '../shapes/rect';
-import {center, isPointInConvexShape, toVec4} from '../utils/geom';
+import {isPointInConvexShape, toVec4} from '../utils/geom';
 import {Timed} from '../utils/timed';
 import {ImageTexture} from '../textures/imageTexture';
 import {range} from '../utils/lists';
-import {Align, Font, FontStyle} from '../font';
-import {Button} from '../button';
+import {Align, FontStyle} from '../fontRenderer';
 import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
+import {buttonRenderer, coloredShader, fontRenderer, texturedShader} from '../../globals';
 
 
 export class GameFieldScene implements Scene {
 
 	name: string = 'GameField';
-	gl: WebGLRenderingContext;
 	gameField: GameField;
 	nodeToShapeMap: Map<FieldNode, BorderedShape>;
-	colorShader: LoadableShader;
-	texturedShader: LoadableShader;
 	rect: Rect;
 	hoveredNode: FieldNode;
 	worldToScreen: Mat4;
@@ -33,8 +28,6 @@ export class GameFieldScene implements Scene {
 	timed: Timed<Rect>;
 	animtex: ImageTexture;
 	rects: Rect[];
-	font: Font;
-	button: Button;
 	wx: number;
 	wy: number;
 	x: number;
@@ -48,24 +41,17 @@ export class GameFieldScene implements Scene {
 	}
 
 	constructor(
-		gl: WebGLRenderingContext,
 		gameField: GameField
 	) {
-		this.gl = gl;
 		this.gameField = gameField;
 		this.nodeToShapeMap = new Map<FieldNode, BorderedShape>();
-		this.colorShader = new LoadableShader(gl, 'colored');
-		this.texturedShader = new LoadableShader(gl, 'textured');
-		this.rect = new Rect(gl,
+		this.rect = new Rect(
 			-16, -26,
 			16, 6
 			/*, -0.4,
 			0.2, 0*/
 		);
-		this.button = new Button(gl);
-		this.font = new Font(gl);
 		this.rects = range(0, 8).map(idx => new Rect(
-			gl,
 			1 / 9 * idx,
 			0,
 			1 / 9 * (idx + 1),
@@ -74,9 +60,9 @@ export class GameFieldScene implements Scene {
 		this.timed = new Timed<Rect>([
 			...this.rects,
 		], 100);
-		this.animtex = new ImageTexture(gl, 'ball-with-ears.png');
+		this.animtex = new ImageTexture('ball-with-ears.png');
 		gameField.getNodes().forEach(node => {
-			const shape = new BorderedShape(gl, node.points);
+			const shape = new BorderedShape(node.points);
 			this.nodeToShapeMap.set(node, shape);
 		});
 		this.highlight = new Map();
@@ -85,49 +71,42 @@ export class GameFieldScene implements Scene {
 
 	load(): Promise<any> {
 		return Promise.all([
-			this.colorShader.load(),
-			this.texturedShader.load(),
 			this.animtex.load(),
-			this.font.load(),
-			this.button.load()
 		]);
 	}
 
 	destroy() {
-		this.colorShader.destroy();
 		Array.of(...this.nodeToShapeMap.values()).forEach(v => v.destroy());
 		this.animtex.destroy();
 		this.rects.forEach(r => r.destroy());
-		this.font.destroy();
-		this.button.destroy();
 	}
 
 	private drawShape(node: FieldNode, fillColor: Vec4 = [0.8, 0.8, 0.8, 1], borderColor: Vec4 = [1, 1, 1, 1]) {
 		const shape = this.nodeToShapeMap.get(node);
 		const isSelectedNode = this.selectedNode() === node;
 		if (isSelectedNode) {
-			this.colorShader.setVector4f('borderColor', [0, 0.8, 0, 1]);
-			this.colorShader.set1f('borderWidth', 3);
+			coloredShader.setVector4f('borderColor', [0, 0.8, 0, 1]);
+			coloredShader.set1f('borderWidth', 3);
 		} else {
-			this.colorShader.setVector4f('borderColor', borderColor);
-			this.colorShader.set1f('borderWidth', 2);
+			coloredShader.setVector4f('borderColor', borderColor);
+			coloredShader.set1f('borderWidth', 2);
 		}
-		this.colorShader.setVector4f('fillColor',
+		coloredShader.setVector4f('fillColor',
 			this.highlight.get(node) || fillColor
 		);
-		this.colorShader.setModel('aVertexPosition', shape);
-		drawTriangles(this.gl, shape.indicesCount);
+		coloredShader.setModel('aVertexPosition', shape);
+		coloredShader.draw();
 	}
 
-	render(w: number, h: number, dt: number) {
+	render(w: number, h: number) {
 		const angle = (new Date().getTime() % 60000) / 60000 * Math.PI * 2;
 		this.worldToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
 
 		rotate(this.worldToScreen, angle, [0, 0, 1]);
 		this.screenToWorld = reverse(this.worldToScreen);
-		this.colorShader.useProgram();
-		this.colorShader.setMatrix('projectionMatrix', this.worldToScreen);
-		this.colorShader.setMatrix('modelMatrix', identity());
+		coloredShader.useProgram();
+		coloredShader.setMatrix('projectionMatrix', this.worldToScreen);
+		coloredShader.setMatrix('modelMatrix', identity());
 		this.gameField.getNodes().forEach((node) => {
 			this.drawShape(node);
 		});
@@ -135,29 +114,28 @@ export class GameFieldScene implements Scene {
 
 		this.pxToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
 		this.screenToPx = reverse(this.pxToScreen);
-		const ptr = multiplyMatToVec(reverse(this.pxToScreen), [this.x, this.y, 0, 1]);
 
 		this.gameField.getCharacters().forEach((character) => {
-			this.texturedShader.useProgram();
-			this.texturedShader.setTexture('texture', this.animtex);
-			this.texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-			this.texturedShader.setModel(
+			texturedShader.useProgram();
+			texturedShader.setTexture('texture', this.animtex);
+			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
+			texturedShader.setModel(
 				'aVertexPosition',
 				this.rect
 			);
-			this.texturedShader.setModel(
+			texturedShader.setModel(
 				'aTexturePosition',
 				this.timed.get()
 			);
 			let c = toVec4(this.gameField.getCharacterPosition(character));
 			const rot = rotate(identity(), angle, [0, 0, 1]);
 			c = multiplyMatToVec(rot, c) as Vec4;
-			this.texturedShader.setMatrix(
+			texturedShader.setMatrix(
 				'modelMatrix',
 				translate(identity(), [c[0], c[1], 0]),
 			);
-			drawTriangles(this.gl, this.rect.indicesCount);
-			this.font.drawString(
+			texturedShader.draw();
+			fontRenderer.drawString(
 				character.name + ' ' + hpbar(character.hp, character.maxHp),
 				c[0], c[1] - 30,
 				FontStyle.BOLD,
@@ -169,38 +147,31 @@ export class GameFieldScene implements Scene {
 			);
 		});
 
-		let x = -120;
-		const y = h / 2 - 23;
-
-		x += this.button.render(
-			x,
-			y,
-			'Inventory',
+		buttonRenderer.renderButtonsRow(
+			-120,
+			h / 2 - 23,
 			this.pxToScreen,
-			() => {
-				console.log('AAA');
-			}
-		) + 2;
-
-		x += this.button.render(
-			x,
-			y,
-			'Stats',
-			this.pxToScreen,
-			() => {
-				console.log('БББ');
-			}
-		) + 2;
-
-		x += this.button.render(
-			x,
-			y,
-			'Map',
-			this.pxToScreen,
-			() => {
-				console.log('CCC');
-			}
-		) + 2;
+			[
+				{
+					title: 'Inventory',
+					onClick: () => {
+						console.log('AAA');
+					}
+				},
+				{
+					title: 'Stats',
+					onClick: () => {
+						console.log('BBB');
+					}
+				},
+				{
+					title: 'Map',
+					onClick: () => {
+						console.log('CCC');
+					}
+				}
+			]
+		);
 
 
 	}
@@ -214,9 +185,9 @@ export class GameFieldScene implements Scene {
 
 	update(dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number,
 		cursorPressed: boolean,
-		cursorClicked: boolean,
-		changeScene: (Scene) => void) {
-		this.button.update(dt, pressedKeyMap, this.screenToPx, cursorX, cursorY, cursorPressed);
+		cursorClicked: boolean
+	) {
+		buttonRenderer.update(dt, pressedKeyMap, this.screenToPx, cursorX, cursorY, cursorPressed);
 		[this.wx, this.wy] = multiplyMatToVec(this.screenToWorld, [cursorX, cursorY, 0, 1]);
 		[this.x, this.y] = [cursorX, cursorY];
 		const oldHoveredNode = this.hoveredNode;

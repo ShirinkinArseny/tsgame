@@ -4,6 +4,7 @@ export class Bimap<A, B> {
 	bToA = new Map<B, A>();
 
 	constructor() {
+		//
 	}
 
 	getA(b: B) {
