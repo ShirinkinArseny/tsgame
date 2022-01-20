@@ -1,8 +1,8 @@
 import {Scene} from '../../scene';
-import {GameField} from '../../logic/gameField';
+import {CharacterCalmState, CharacterMovingState, GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
-import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec4} from '../utils/matrices';
+import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec2, Vec4} from '../utils/matrices';
 import {Rect} from '../shapes/rect';
 import {isPointInConvexShape, toVec4} from '../utils/geom';
 import {Timed} from '../utils/timed';
@@ -25,7 +25,6 @@ export class GameFieldScene implements Scene {
 	screenToWorld: Mat4;
 	pxToScreen: Mat4;
 	screenToPx: Mat4;
-	timed: Timed<Rect>;
 	animtex: ImageTexture;
 	rects: Rect[];
 	wx: number;
@@ -37,7 +36,7 @@ export class GameFieldScene implements Scene {
 	pathToMove: FieldNode[];
 
 	private selectedNode() {
-		return this.gameField.getCharacterNode(this.selectedCharacter);
+		return this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter).node;
 	}
 
 	constructor(
@@ -57,9 +56,6 @@ export class GameFieldScene implements Scene {
 			1 / 9 * (idx + 1),
 			1
 		));
-		this.timed = new Timed<Rect>([
-			...this.rects,
-		], 100);
 		this.animtex = new ImageTexture('ball-with-ears.png');
 		gameField.getNodes().forEach(node => {
 			const shape = new BorderedShape(node.points);
@@ -98,6 +94,33 @@ export class GameFieldScene implements Scene {
 		coloredShader.draw();
 	}
 
+	private getCharacterPosition(character): Vec2 {
+		const state = this.gameField.getCharacterState(character);
+		if (state instanceof CharacterCalmState) {
+			return state.node.center;
+		}
+		if (state instanceof CharacterMovingState) {
+			const a = state.from.center;
+			const b = state.to.center;
+			const p = state.phase;
+			return [
+				a[0] * (1 - p) + b[0] * p,
+				a[1] * (1 - p) + b[1] * p,
+			];
+		}
+	}
+
+	private getCharacterFrame(character): number {
+		const state = this.gameField.getCharacterState(character);
+		if (state instanceof CharacterCalmState) {
+			return 0;
+		}
+		if (state instanceof CharacterMovingState) {
+			const p = state.phase;
+			return Math.round((this.rects.length-1) * p);
+		}
+	}
+
 	render(w: number, h: number) {
 		const angle = (new Date().getTime() % 60000) / 60000 * Math.PI * 2;
 		this.worldToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
@@ -119,15 +142,9 @@ export class GameFieldScene implements Scene {
 			texturedShader.useProgram();
 			texturedShader.setTexture('texture', this.animtex);
 			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-			texturedShader.setModel(
-				'aVertexPosition',
-				this.rect
-			);
-			texturedShader.setModel(
-				'aTexturePosition',
-				this.timed.get()
-			);
-			let c = toVec4(this.gameField.getCharacterPosition(character));
+			texturedShader.setModel('aVertexPosition', this.rect);
+			texturedShader.setModel('aTexturePosition', this.rects[this.getCharacterFrame(character)]);
+			let c = toVec4(this.getCharacterPosition(character));
 			const rot = rotate(identity(), angle, [0, 0, 1]);
 			c = multiplyMatToVec(rot, c) as Vec4;
 			texturedShader.setMatrix(

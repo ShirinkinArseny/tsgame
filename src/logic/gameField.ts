@@ -2,26 +2,73 @@ import {getGraph} from './field/fiveField';
 import {FieldNode} from './field/fieldNode';
 import {Character} from './character';
 import {Bimap} from '../render/utils/bimap';
-import {Vec2} from '../render/utils/matrices';
-import {Animation} from './animation';
-import {center} from '../render/utils/geom';
+
+
+class AbstractCharacterState {
+	readonly node: FieldNode;
+
+
+	constructor(node: FieldNode) {
+		this.node = node;
+	}
+
+}
+
+export class CharacterCalmState extends AbstractCharacterState {
+
+	constructor(node: FieldNode) {
+		super(node);
+	}
+
+}
+
+export class CharacterMovingState extends AbstractCharacterState {
+	readonly from: FieldNode;
+	readonly to: FieldNode;
+	readonly phase: number;
+
+	constructor(from: FieldNode, to: FieldNode, phase: number) {
+		super(from);
+		this.from = from;
+		this.to = to;
+		this.phase = phase;
+	}
+
+}
+
+export type CharacterState = CharacterCalmState | CharacterMovingState;
+
+class CharacterMotion {
+	readonly startedAt: number;
+	readonly path: FieldNode[];
+
+	constructor(
+		startedAt: number,
+		path: FieldNode[]
+	) {
+		this.startedAt = startedAt;
+		this.path = path;
+	}
+
+}
 
 export class GameField {
 
-	private graph: Array<FieldNode>;
-	private characters: Bimap<Character, FieldNode>;
-	private charactersMoveAnimations: Map<Character, Animation<Vec2>>;
+	private readonly graph: Array<FieldNode>;
+	private readonly characters: Bimap<Character, FieldNode>;
+	private readonly charactersMotions: Map<Character, CharacterMotion>;
 
 	constructor() {
 		this.graph = getGraph(100, 100, -100, -100, 20);
-		this.charactersMoveAnimations = new Map<Character, Animation<Vec2>>();
+		this.charactersMotions = new Map<Character, CharacterMotion>();
 		this.characters = new Bimap<Character, FieldNode>();
 		this.characters.set(
 			new Character(
 				'Mike',
 				'main',
 				3.5,
-				5
+				5,
+				400
 			),
 			this.graph[0]
 		);
@@ -30,7 +77,8 @@ export class GameField {
 				'Jeff',
 				'main',
 				5,
-				5
+				5,
+				400
 			),
 			this.graph[4]
 		);
@@ -80,62 +128,38 @@ export class GameField {
 	}
 
 	moveCharacter(character: Character, to: FieldNode) {
-
-
 		const path = this.findPath(
 			this.characters.getB(character),
 			to
 		);
-		let moveIsOver = false;
-		let step = 0;
-		const dur = 600;
-		let date = new Date().getTime();
-		const anim: Animation<Vec2> = {
-			isOver: () => moveIsOver,
-			getValue: () => {
-				const prev = center(path[step].points);
-				const next = center(path[step + 1].points);
-				let t = (new Date().getTime() - date) / dur;
-				if (t > 1) t = 1;
-				return [
-					prev[0] * (1 - t) + next[0] * t,
-					prev[1] * (1 - t) + next[1] * t,
-				] as Vec2;
-			}
-		};
-		this.charactersMoveAnimations.set(character, anim);
-		path.forEach((node, index) => {
-			setTimeout(() => {
-				step = index;
-				date = new Date().getTime();
-				this.characters.removeA(character);
-				this.characters.set(character, node);
-				if (index + 1 === path.length) {
-					moveIsOver = true;
-				}
-			}, index * dur);
-		});
-
+		const date = new Date().getTime();
+		this.charactersMotions.set(character, new CharacterMotion(
+			date, path
+		));
 	}
 
-
-	getCharacterNode(character: Character) {
-		return this.characters.getB(character);
-	}
-
-	getCharacterPosition(character: Character) {
+	getCharacterState(character: Character): CharacterState {
 		if (!character) return;
-		const anim = this.charactersMoveAnimations.get(character);
-		if (anim) {
-			if (anim.isOver()) {
-				this.charactersMoveAnimations.delete(character);
+		const motion = this.charactersMotions.get(character);
+		if (motion) {
+			const time = new Date().getTime();
+			const diff = time - motion.startedAt;
+			const path = motion.path;
+			if (diff >= (path.length - 1) * character.moveTime) {
+				this.charactersMotions.delete(character);
+				this.characters.removeA(character);
+				this.characters.set(character, motion.path[motion.path.length - 1]);
 			} else {
-				const v = anim.getValue();
-				return v;
+				const step = Math.floor(diff / character.moveTime);
+				const phase = (diff - step * character.moveTime) / character.moveTime;
+				return new CharacterMovingState(
+					path[step],
+					path[step + 1],
+					phase
+				);
 			}
 		}
-		const c = this.characters.getB(character);
-		return center(c.points);
+		return new CharacterCalmState(this.characters.getB(character));
 	}
 
 	getCharacterAt(node: FieldNode) {

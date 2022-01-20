@@ -1,12 +1,16 @@
 import {Vec2} from '../../render/utils/matrices';
+import {center} from '../../render/utils/geom';
 
 export class FieldNode {
-	points: Array<Vec2>;
-	nodes: FieldNode[];
+
+	readonly points: Array<Vec2>;
+	readonly nodes: FieldNode[];
+	readonly center: Vec2;
 
 	constructor(points: Array<Vec2>) {
 		this.points = points;
 		this.nodes = [];
+		this.center = center(points);
 	}
 
 	linkToNode(node: FieldNode) {
