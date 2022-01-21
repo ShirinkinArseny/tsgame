@@ -27,7 +27,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 	pressed: boolean = false;
 	clicked: boolean = false;
 
-	update(dt: number, pressedKeyMap: Map<number, boolean>,
+	update(dt: number, pressedKeyMap: Map<string, boolean>,
 		scrToPx: Mat4,
 		cursorX: number, cursorY: number, cursorPressed: boolean) {
 		[this.cx, this.cy] = multiplyMatToVec(scrToPx, [cursorX, cursorY, 0, 1]);

@@ -57,7 +57,7 @@ export class Pixelized implements Scene {
 
 	}
 
-	update(dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number, cursorPressed: boolean,
+	update(dt: number, pressedKeyMap: Map<string, boolean>, cursorX: number, cursorY: number, cursorPressed: boolean,
 		cursorClicked: boolean,
 		changeScene: (scene: Scene) => void) {
 		this.scene.update(dt, pressedKeyMap, cursorX, cursorY, cursorPressed, cursorClicked, changeScene);

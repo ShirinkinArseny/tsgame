@@ -9,7 +9,7 @@ export interface Scene extends Destroyable, Loadable {
 	load(): Promise<any>;
 
 	update(dt: number,
-		pressedKeyMap: Map<number, boolean>,
+		pressedKeyMap: Map<string, boolean>,
 		cursorX: number,
 		cursorY: number,
 		cursorPressed: boolean,

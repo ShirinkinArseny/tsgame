@@ -193,7 +193,7 @@ export class GameFieldScene implements Scene {
 		this.pathToMove.forEach(f => this.highlight.set(f, [0.8, 1.0, 0.8, 1.0]));
 	}
 
-	update(dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number,
+	update(dt: number, pressedKeyMap: Map<string, boolean>, cursorX: number, cursorY: number,
 		cursorPressed: boolean,
 		cursorClicked: boolean
 	) {
@@ -207,13 +207,11 @@ export class GameFieldScene implements Scene {
 		);
 		if (cursorClicked) {
 			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
-			if (newSelectedCharacter) {
-				this.selectedCharacter = newSelectedCharacter;
+			if (!newSelectedCharacter && this.selectedCharacter && this.hoveredNode) {
+				this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
+				this.highlight.clear();
 			} else {
-				if (this.selectedCharacter && this.hoveredNode) {
-					this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
-					this.highlight.clear();
-				}
+				this.selectedCharacter = newSelectedCharacter;
 			}
 		}
 		if (oldHoveredNode !== this.hoveredNode || this.selectedNode() !== oldSelectedNode) {
