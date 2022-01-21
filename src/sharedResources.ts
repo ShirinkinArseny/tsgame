@@ -3,15 +3,18 @@ import {FontRenderer} from './render/fontRenderer';
 import {ButtonRenderer} from './render/buttonRenderer';
 import {LoadableShader} from './render/shaders/loadableShader';
 
-export const defaultRect = new Rect();
-
-export const texturedShader = new LoadableShader('textured');
-export const coloredShader = new LoadableShader('colored');
-
-export const fontRenderer = new FontRenderer();
-export const buttonRenderer = new ButtonRenderer();
+export let defaultRect!: Rect;
+export let texturedShader!: LoadableShader;
+export let coloredShader!: LoadableShader;
+export let fontRenderer!: FontRenderer;
+export let buttonRenderer!: ButtonRenderer;
 
 export const loadSharedResources = () => {
+	defaultRect = new Rect();
+	texturedShader = new LoadableShader('textured');
+	coloredShader = new LoadableShader('colored');
+	fontRenderer = new FontRenderer();
+	buttonRenderer = new ButtonRenderer();
 	return Promise.all([
 		texturedShader.load(),
 		coloredShader.load(),

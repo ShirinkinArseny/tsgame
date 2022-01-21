@@ -1,10 +1,12 @@
+
+import {gl, initGlobalGlContext} from './globalContext';
+import {loadSharedResources,} from './sharedResources';
+
 import {Scene} from './scene';
 import {tryDetectError} from './render/utils/gl';
 import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {Pixelized} from './render/pixelized';
-import {gl, initGlobalGlContext} from './globalContext';
-import {loadSharedResources,} from './sharedResources';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
