@@ -1,7 +1,8 @@
 import {Scene} from '../scene';
 import {FBO} from './textures/fbo';
 import {identity, ortho} from './utils/matrices';
-import {defaultRect, gl, texturedShader} from '../globals';
+import {gl} from '../globalContext';
+import {defaultRect, texturedShader} from '../sharedResources';
 
 
 export class Pixelized implements Scene {
@@ -58,7 +59,7 @@ export class Pixelized implements Scene {
 
 	update(dt: number, pressedKeyMap: Map<number, boolean>, cursorX: number, cursorY: number, cursorPressed: boolean,
 		cursorClicked: boolean,
-		changeScene: (Scene) => void) {
+		changeScene: (scene: Scene) => void) {
 		this.scene.update(dt, pressedKeyMap, cursorX, cursorY, cursorPressed, cursorClicked, changeScene);
 	}
 

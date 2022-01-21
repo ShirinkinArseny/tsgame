@@ -3,9 +3,8 @@ import {tryDetectError} from './render/utils/gl';
 import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {Pixelized} from './render/pixelized';
-import {
-	gl, initGlobals, loadGlobals,
-} from './globals';
+import {gl, initGlobalGlContext} from './globalContext';
+import {loadSharedResources,} from './sharedResources';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
@@ -20,9 +19,11 @@ enum CursorPressedState {
 function main() {
 
 
-	const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+	const canvas: HTMLCanvasElement = document.getElementById('canvas') as HTMLCanvasElement;
 
-	initGlobals(canvas.getContext('webgl2'));
+	const glContext = canvas.getContext('webgl2') as WebGLRenderingContext;
+
+	initGlobalGlContext(glContext);
 
 	if (!gl) {
 		alert('Unable to initialize WebGL. Your browser or machine may not support it.');
@@ -34,10 +35,10 @@ function main() {
 	let cursorY = 0;
 	let cursorPressed = CursorPressedState.Nothing;
 	document.addEventListener('keydown', event => {
-		pressedKeysMap[event.keyCode] = true;
+		pressedKeysMap.set(event.keyCode, true);
 	}, false);
 	document.addEventListener('keyup', event => {
-		pressedKeysMap[event.keyCode] = false;
+		pressedKeysMap.set(event.keyCode, false);
 	}, false);
 	document.addEventListener('mousemove', event => {
 		cursorX = event.x;
@@ -117,7 +118,7 @@ function main() {
 		});
 	};
 
-	loadGlobals().then(() => {
+	loadSharedResources().then(() => {
 		render();
 	});
 

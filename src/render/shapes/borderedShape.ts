@@ -13,7 +13,9 @@ export class BorderedShape extends ConvexShape {
 	) {
 		const center = bounds.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]).map(v => v / bounds.length) as Vec2;
 
-		const triangles = [];
+		type Vertex = [number, number, number];
+
+		const triangles: Vertex[] = [];
 
 		range(0, bounds.length - 1).forEach(idx => {
 			const i1 = idx;

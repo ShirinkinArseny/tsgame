@@ -4,7 +4,7 @@ import {ImageTexture} from './textures/imageTexture';
 import {Align, FontStyle} from './fontRenderer';
 import {Rect} from './shapes/rect';
 import {identity, Mat4, multiplyMatToVec, scale, translate, Vec4} from './utils/matrices';
-import {fontRenderer, texturedShader} from '../globals';
+import {fontRenderer, texturedShader} from '../sharedResources';
 
 interface ButtonContent {
 	title: string;
@@ -14,29 +14,18 @@ interface ButtonContent {
 
 export class ButtonRenderer implements Loadable, Destroyable {
 
-	texture: ImageTexture;
-	r1: Rect;
-	r2: Rect;
-	r3: Rect;
-	r4: Rect;
-	r5: Rect;
-	r6: Rect;
-	r: Rect;
-	cx: number;
-	cy: number;
-	pressed: boolean;
-	clicked: boolean;
-
-	constructor() {
-		this.texture = new ImageTexture('button.png');
-		this.r = new Rect(0, 0, 1, 16);
-		this.r1 = new Rect(0, 0, 6 / 64, 1);
-		this.r2 = new Rect(6 / 64, 0, 7 / 32, 1);
-		this.r3 = new Rect(26 / 64, 0, 32 / 64, 1);
-		this.r4 = new Rect(1 / 2 + 0, 0, 1 / 2 + 6 / 64, 1);
-		this.r5 = new Rect(1 / 2 + 6 / 64, 0, 1 / 2 + 7 / 32, 1);
-		this.r6 = new Rect(1 / 2 + 26 / 64, 0, 1 / 2 + 32 / 64, 1);
-	}
+	texture: ImageTexture = new ImageTexture('button.png');
+	r: Rect = new Rect(0, 0, 1, 16);
+	r1: Rect = new Rect(0, 0, 6 / 64, 1);
+	r2: Rect = new Rect(6 / 64, 0, 7 / 32, 1);
+	r3: Rect = new Rect(26 / 64, 0, 32 / 64, 1);
+	r4: Rect = new Rect(1 / 2 + 0, 0, 1 / 2 + 6 / 64, 1);
+	r5: Rect = new Rect(1 / 2 + 6 / 64, 0, 1 / 2 + 7 / 32, 1);
+	r6: Rect = new Rect(1 / 2 + 26 / 64, 0, 1 / 2 + 32 / 64, 1);
+	cx: number = 0;
+	cy: number = 0;
+	pressed: boolean = false;
+	clicked: boolean = false;
 
 	update(dt: number, pressedKeyMap: Map<number, boolean>,
 		scrToPx: Mat4,

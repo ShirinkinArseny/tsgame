@@ -25,7 +25,7 @@ export class Bimap<A, B> {
 	}
 
 	map<T>(action: (a: A, b: B) => T) {
-		const res = [];
+		const res: T[] = [];
 		this.forEach((a, b) => res.push(action(a, b)));
 		return res;
 	}
@@ -33,12 +33,16 @@ export class Bimap<A, B> {
 	removeA(a: A) {
 		const b = this.aToB.get(a);
 		this.aToB.delete(a);
-		this.bToA.delete(b);
+		if (b) {
+			this.bToA.delete(b);
+		}
 	}
 
 	removeB(b: B) {
 		const a = this.bToA.get(b);
 		this.bToA.delete(b);
-		this.aToB.delete(a);
+		if (a) {
+			this.aToB.delete(a);
+		}
 	}
 }

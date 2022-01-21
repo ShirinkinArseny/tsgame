@@ -1,11 +1,15 @@
-export const splitImage = (image: HTMLImageElement) => {
+import {error} from './render/utils/errors';
+
+type Bounds = [number, number, number, number]
+
+export function splitImage(image: HTMLImageElement): [number, Bounds[][]] {
 
 	const canvas = document.createElement('canvas');
 	canvas.width = image.width;
 	canvas.height = image.height;
-	canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+	const context: CanvasRenderingContext2D = canvas.getContext('2d') || error('Failed to create canvas context');
+	context.drawImage(image, 0, 0, image.width, image.height);
 
-	const context = canvas.getContext('2d');
 	const data = context.getImageData(0, 0, image.width, image.height).data.filter((_, idx) => idx % 4 === 3
 	);
 
@@ -14,13 +18,13 @@ export const splitImage = (image: HTMLImageElement) => {
 		return data[x + y * image.width] !== 0;
 	};
 
-	const already = {};
+	const already = new Map<string, boolean>();
 
-	const detectSymbolBounds = (x: number, y: number) => {
-		const pixels = [];
+	function detectSymbolBounds(x: number, y: number): Bounds {
+		const pixels: [number, number][] = [];
 		const collectPixels = (x: number, y: number) => {
-			if (already[x + ':' + y]) return;
-			already[x + ':' + y] = true;
+			if (already.get(x + ':' + y)) return;
+			already.set(x + ':' + y, true);
 			if (!isFilled(x, y)) return;
 			pixels.push([x, y]);
 			for (let dx = -2; dx <= 2; dx++) {
@@ -47,27 +51,30 @@ export const splitImage = (image: HTMLImageElement) => {
 		}
 
 		return [minx, maxx, miny, maxy];
+	}
 
-	};
-
-	const bounds = [];
+	const bounds: Bounds[] = [];
 
 	for (let x = 0; x < image.width; x++) {
 		for (let y = 0; y < image.height; y++) {
 			if (!isFilled(x, y)) continue;
-			if (already[x + ':' + y]) continue;
+			if (already.get(x + ':' + y)) continue;
 			bounds.push(detectSymbolBounds(x, y));
 		}
 	}
 
 	const maxh = bounds.reduce((acc, val) => Math.max(acc, val[3] - val[2]), 0);
-	const linesY = Object.keys(bounds.filter(b => b[3] - b[2] === maxh).map(b => b[2]).reduce(
-		(acc, v) => {
-			acc[v] = true;
-			return acc;
-		},
-		{}
-	)).map(v => parseInt(v));
+	const linesY = bounds
+		.filter(b => b[3] - b[2] === maxh)
+		.map(b => b[2])
+		.reduce(
+			(acc, v) => {
+				acc.set(v, true);
+				return acc;
+			},
+			new Map<number, boolean>()
+		)
+		.keysList();
 
 	const intersects = (x0: number, x1: number, x2: number, x3: number) => {
 		if (x0 >= x2 && x0 <= x3) {
@@ -114,4 +121,4 @@ export const splitImage = (image: HTMLImageElement) => {
 	return [maxh + 1, lines];
 
 
-};
+}

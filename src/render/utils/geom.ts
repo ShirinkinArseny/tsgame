@@ -56,7 +56,15 @@ export const dotProduct = (a: Vec2, b: Vec2) => {
 };
 
 //|a|*|b|*sin(a^b)
-export function crossProduct([a0, a1, a2 = 0], [b0, b1, b2 = 0]): Vec3 {
+export function crossProduct(a: number[], b: number[]): Vec3 {
+	const [a0, a1, a2, b0, b1, b2] = [
+		a[0] || 0,
+		a[1] || 0,
+		a[2] || 0,
+		b[0] || 0,
+		b[1] || 0,
+		b[2] || 0,
+	];
 	return [
 		a1 * b2 - a2 * b1,
 		a2 * b0 - a0 * b2,
@@ -72,8 +80,8 @@ export function isPointInConvexShape(
 ) {
 	const sign = Math.sign(crossProduct(aToB(shape[shape.length - 1], point), aToB(shape[shape.length - 1], shape[0]))[2]);
 	for (let i = 1; i < shape.length; i++) {
-		const vec = aToB(shape[i-1], shape[i]);
-		const s = aToB(shape[i-1], point);
+		const vec = aToB(shape[i - 1], shape[i]);
+		const s = aToB(shape[i - 1], point);
 		const c = crossProduct(s, vec);
 		if (Math.sign(c[2]) !== sign) return false;
 	}

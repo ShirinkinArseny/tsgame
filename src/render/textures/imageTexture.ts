@@ -1,15 +1,16 @@
 import {Texture} from './texture';
 import {Loadable} from '../utils/loadable';
-import {gl} from '../../globals';
+import {error} from '../utils/errors';
+import {gl} from '../../globalContext';
 
 export class ImageTexture extends Texture implements Loadable {
 
 	private readonly url: string;
-	public width: number;
-	public height: number;
+	public width: number = 0;
+	public height: number = 0;
 
 	constructor(url: string) {
-		super(gl.createTexture());
+		super(gl.createTexture() || error('Failed to create texture'));
 		this.url = '/assets/images/' + url;
 	}
 

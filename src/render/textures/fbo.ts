@@ -1,5 +1,6 @@
 import {Texture} from './texture';
-import {gl} from '../../globals';
+import {error} from '../utils/errors';
+import {gl} from '../../globalContext';
 
 export class FBO extends Texture {
 
@@ -13,12 +14,12 @@ export class FBO extends Texture {
 		width: number,
 		height: number
 	) {
-		super(gl.createTexture());
+		super(gl.createTexture() || error('Failed to create texture'));
 		this.width = width;
 		this.height = height;
 		gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
 
-		this.depthBuffer = gl.createRenderbuffer();
+		this.depthBuffer = gl.createRenderbuffer() || error('Failed to create renderbuffer');
 		gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthBuffer);
 
 		const level = 0;
@@ -40,7 +41,7 @@ export class FBO extends Texture {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,
 			gl.CLAMP_TO_EDGE);
 
-		this.fb = gl.createFramebuffer();
+		this.fb = gl.createFramebuffer() || error('Failed to create framebuffer');
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
 
 		const attachmentPoint = gl.COLOR_ATTACHMENT0;

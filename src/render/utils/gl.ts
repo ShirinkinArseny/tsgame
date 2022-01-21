@@ -1,4 +1,4 @@
-import {gl} from '../../globals';
+import {gl} from '../../globalContext';
 
 export const tryDetectError = () => {
 	const errorCode = gl.getError();

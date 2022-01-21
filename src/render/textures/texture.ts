@@ -2,12 +2,9 @@ import {Destroyable} from '../utils/destroyable';
 
 export abstract class Texture implements Destroyable {
 
-	readonly targetTexture: WebGLTexture;
-
-	constructor(targetTexture: WebGLTexture) {
-		this.targetTexture = targetTexture;
+	protected constructor(public readonly targetTexture: WebGLTexture) {
 	}
 
-	abstract destroy();
+	abstract destroy(): void;
 
 }

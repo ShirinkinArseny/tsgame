@@ -1,5 +1,6 @@
 import {Destroyable} from '../utils/destroyable';
-import {gl} from '../../globals';
+import {error} from '../utils/errors';
+import {gl} from '../../globalContext';
 
 export class ConvexShape implements Destroyable {
 
@@ -21,12 +22,12 @@ export class ConvexShape implements Destroyable {
 		this.components = components;
 		this.indicesCount = indices.length;
 
-		this.position = gl.createBuffer();
+		this.position = gl.createBuffer() || error('Failed to create positions buffer');
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.position);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(
 			positions.flat(),
 		), gl.STATIC_DRAW);
-		this.indices = gl.createBuffer();
+		this.indices = gl.createBuffer() || error('Failed to create indices buffer');
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indices);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(
 			indices,

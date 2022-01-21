@@ -17,7 +17,13 @@ function getCrossPoints(boundRight = 20, boundUp = 20, boundLeft = 0, boundDown 
 	return crossCenterPoints;
 }
 
-export function getGraph(boundRight?, boundUp?, boundLeft?, boundDown?, shapeSize?) {
+export function getGraph(
+	boundRight: number | undefined,
+	boundUp: number | undefined,
+	boundLeft: number | undefined,
+	boundDown: number | undefined,
+	shapeSize: number | undefined
+) {
 	const crossPoints = getCrossPoints(boundRight, boundUp, boundLeft, boundDown, shapeSize);
 
 	const fiveShapePoints = crossPoints.map(crossCenter => getCrossFiveShapes(crossCenter, shapeSize)).flat(1);
@@ -75,7 +81,7 @@ function getCrossFiveShapes(crossCenter: Vec2, shapeSize = 1): Array<Array<Vec2>
 	return cross;
 }
 
-function rotateShape(shape, angleDeg, origin?) {
+function rotateShape(shape: number[][], angleDeg: number, origin: [number, number] | undefined) {
 	return shape.map(point => {
 		return rotatePoint(point as Vec2, degreesToRadians(angleDeg), origin);
 	});

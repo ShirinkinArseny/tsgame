@@ -113,12 +113,12 @@ export function rotate(matrix: Mat4, rad: number, axis: Vec3) {
 }
 
 export function ortho(
-	left,
-	right,
-	bottom,
-	top,
-	near,
-	far,
+	left: number,
+	right: number,
+	bottom: number,
+	top: number,
+	near: number,
+	far: number,
 ): Mat4 {
 	const lr = 1 / (left - right);
 	const bt = 1 / (bottom - top);

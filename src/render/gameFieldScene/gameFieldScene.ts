@@ -1,68 +1,60 @@
 import {Scene} from '../../scene';
-import {CharacterCalmState, CharacterMovingState, GameField} from '../../logic/gameField';
+import {GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
 import {identity, Mat4, multiplyMatToVec, ortho, reverse, rotate, translate, Vec2, Vec4} from '../utils/matrices';
 import {Rect} from '../shapes/rect';
 import {isPointInConvexShape, toVec4} from '../utils/geom';
-import {Timed} from '../utils/timed';
 import {ImageTexture} from '../textures/imageTexture';
 import {range} from '../utils/lists';
 import {Align, FontStyle} from '../fontRenderer';
 import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
-import {buttonRenderer, coloredShader, fontRenderer, texturedShader} from '../../globals';
+import {error} from '../utils/errors';
+import {buttonRenderer, coloredShader, fontRenderer, texturedShader} from '../../sharedResources';
 
 
 export class GameFieldScene implements Scene {
 
 	name: string = 'GameField';
-	gameField: GameField;
-	nodeToShapeMap: Map<FieldNode, BorderedShape>;
-	rect: Rect;
-	hoveredNode: FieldNode;
-	worldToScreen: Mat4;
-	screenToWorld: Mat4;
-	pxToScreen: Mat4;
-	screenToPx: Mat4;
-	animtex: ImageTexture;
-	rects: Rect[];
-	wx: number;
-	wy: number;
-	x: number;
-	y: number;
-	highlight: Map<FieldNode, Vec4>;
-	selectedCharacter: Character;
-	pathToMove: FieldNode[];
+	nodeToShapeMap: Map<FieldNode, BorderedShape> = new Map<FieldNode, BorderedShape>();
+	rect: Rect = new Rect(
+		-16, -26,
+		16, 6
+		/*, -0.4,
+		0.2, 0*/
+	);
+	hoveredNode: FieldNode | undefined;
+	worldToScreen: Mat4 = identity();
+	screenToWorld: Mat4 = identity();
+	pxToScreen: Mat4 = identity();
+	screenToPx: Mat4 = identity();
+	animtex: ImageTexture = new ImageTexture('ball-with-ears.png');
+	rects: Rect[] = range(0, 8).map(idx => new Rect(
+		1 / 9 * idx,
+		0,
+		1 / 9 * (idx + 1),
+		1
+	));
+	wx: number = 0;
+	wy: number = 0;
+	x: number = 0;
+	y: number = 0;
+	highlight: Map<FieldNode, Vec4> = new Map();
+	selectedCharacter: Character | undefined;
+	pathToMove: FieldNode[] = [];
 
 	private selectedNode() {
 		return this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter).node;
 	}
 
 	constructor(
-		gameField: GameField
+		private readonly gameField: GameField
 	) {
-		this.gameField = gameField;
-		this.nodeToShapeMap = new Map<FieldNode, BorderedShape>();
-		this.rect = new Rect(
-			-16, -26,
-			16, 6
-			/*, -0.4,
-			0.2, 0*/
-		);
-		this.rects = range(0, 8).map(idx => new Rect(
-			1 / 9 * idx,
-			0,
-			1 / 9 * (idx + 1),
-			1
-		));
-		this.animtex = new ImageTexture('ball-with-ears.png');
 		gameField.getNodes().forEach(node => {
 			const shape = new BorderedShape(node.points);
 			this.nodeToShapeMap.set(node, shape);
 		});
-		this.highlight = new Map();
-		this.pathToMove = [];
 	}
 
 	load(): Promise<any> {
@@ -78,7 +70,7 @@ export class GameFieldScene implements Scene {
 	}
 
 	private drawShape(node: FieldNode, fillColor: Vec4 = [0.8, 0.8, 0.8, 1], borderColor: Vec4 = [1, 1, 1, 1]) {
-		const shape = this.nodeToShapeMap.get(node);
+		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
 		const isSelectedNode = this.selectedNode() === node;
 		if (isSelectedNode) {
 			coloredShader.setVector4f('borderColor', [0, 0.8, 0, 1]);
@@ -94,12 +86,12 @@ export class GameFieldScene implements Scene {
 		coloredShader.draw();
 	}
 
-	private getCharacterPosition(character): Vec2 {
+	private getCharacterPosition(character: Character): Vec2 {
 		const state = this.gameField.getCharacterState(character);
-		if (state instanceof CharacterCalmState) {
+		switch (state.kind) {
+		case 'CharacterCalmState':
 			return state.node.center;
-		}
-		if (state instanceof CharacterMovingState) {
+		case 'CharacterMovingState': {
 			const a = state.from.center;
 			const b = state.to.center;
 			const p = state.phase;
@@ -108,16 +100,16 @@ export class GameFieldScene implements Scene {
 				a[1] * (1 - p) + b[1] * p,
 			];
 		}
+		}
 	}
 
-	private getCharacterFrame(character): number {
+	private getCharacterFrame(character: Character): number {
 		const state = this.gameField.getCharacterState(character);
-		if (state instanceof CharacterCalmState) {
+		switch (state.kind) {
+		case 'CharacterCalmState':
 			return 0;
-		}
-		if (state instanceof CharacterMovingState) {
-			const p = state.phase;
-			return Math.round((this.rects.length-1) * p);
+		case 'CharacterMovingState':
+			return Math.round((this.rects.length - 1) * state.phase);
 		}
 	}
 
@@ -195,8 +187,9 @@ export class GameFieldScene implements Scene {
 
 	private updatePath() {
 		this.highlight.clear();
-		if (!this.selectedCharacter || !this.hoveredNode) return;
-		this.pathToMove = this.gameField.findPath(this.selectedNode(), this.hoveredNode);
+		const selectedNode = this.selectedNode();
+		if (!selectedNode || !this.hoveredNode) return;
+		this.pathToMove = this.gameField.findPath(selectedNode, this.hoveredNode);
 		this.pathToMove.forEach(f => this.highlight.set(f, [0.8, 1.0, 0.8, 1.0]));
 	}
 

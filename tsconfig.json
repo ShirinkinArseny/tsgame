@@ -5,6 +5,7 @@
     "target": "es2021",
     "sourceMap": true,
     "rootDir": "src/",
-    "outDir": "build/ts/"
+    "outDir": "build/ts/",
+    "strict": true
   }
 }

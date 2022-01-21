@@ -14,8 +14,8 @@ export interface Scene extends Destroyable, Loadable {
 		cursorY: number,
 		cursorPressed: boolean,
 		cursorClicked: boolean,
-		changeScene: (Scene) => void);
+		changeScene: (scene: Scene) => void): void;
 
-	render(w: number, h: number, dt: number);
+	render(w: number, h: number, dt: number): void;
 
 }

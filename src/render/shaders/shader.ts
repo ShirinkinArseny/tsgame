@@ -4,53 +4,59 @@ import {Destroyable} from '../utils/destroyable';
 import {Loadable} from '../utils/loadable';
 import {Texture} from '../textures/texture';
 import {ConvexShape} from '../shapes/convexShape';
-import {gl} from '../../globals';
+import {error} from '../utils/errors';
+import {gl} from '../../globalContext';
 
 let bindedShader: Shader | undefined;
 let bindedTextures: { [k: string]: number } = {};
 let bindedTexturesCounter = 0;
 
-let bindedModelIndicesCount: number = undefined;
+let bindedModelIndicesCount: number = 0;
 
-const getTextureLayer = (index: number) => {
+function getTextureLayer(index: number): GLenum {
 	if (index >= 32) {
 		throw new Error('Do you really need this much textures?');
 	}
-	return gl[`TEXTURE${index}`];
-};
+	const key = `TEXTURE${index}`;
+	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// @ts-ignore
+	return gl[key] as GLenum;
+}
+
+function loadShader(type: number, source: string): WebGLShader {
+	const shader = gl.createShader(type);
+	if (!shader) {
+		throw new Error('???');
+	}
+	gl.shaderSource(shader, source);
+	gl.compileShader(shader);
+	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+		const text = `An error occurred compiling the shader: 
+                ${gl.getShaderInfoLog(shader)}`;
+		gl.deleteShader(shader);
+		throw new Error(text);
+	}
+	return shader;
+}
 
 export class Shader implements Destroyable, Loadable {
 
-	private loadShader(type: number, source: string): WebGLShader {
-		const shader = gl.createShader(type);
-
-		gl.shaderSource(shader, source);
-		gl.compileShader(shader);
-
-		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-			const text = `An error occurred compiling the shader: 
-                ${gl.getShaderInfoLog(shader)}`;
-			gl.deleteShader(shader);
-			throw new Error(text);
-		}
-
-		return shader;
-	}
-
-	private readonly vertexPromise: Promise<string>;
-	private readonly fragmentPromise: Promise<string>;
-	private vertexShader: WebGLShader;
-	private fragmentShader: WebGLShader;
-	private program: WebGLProgram;
-	private attributesCache: SimpleCache<number>;
-	private uniformsCache: SimpleCache<WebGLUniformLocation>;
+	private vertexShader!: WebGLShader;
+	private fragmentShader!: WebGLShader;
+	private program!: WebGLProgram;
+	private attributesCache: SimpleCache<string, number> = new SimpleCache((name) =>
+		gl.getAttribLocation(this.program, name),
+	);
+	private uniformsCache: SimpleCache<string, WebGLUniformLocation> = new SimpleCache((name) => {
+		const v = gl.getUniformLocation(this.program, name);
+		if (!v) throw new Error('No uniform found for name ' + name);
+		return v;
+	});
 
 	constructor(
-		vertex: Promise<string>,
-		fragment: Promise<string>,
+		private readonly vertexPromise: Promise<string>,
+		private readonly fragmentPromise: Promise<string>,
 	) {
-		this.vertexPromise = vertex;
-		this.fragmentPromise = fragment;
 	}
 
 	load(): Promise<void> {
@@ -58,16 +64,15 @@ export class Shader implements Destroyable, Loadable {
 			this.vertexPromise,
 			this.fragmentPromise
 		]).then(([vertexSource, fragmentSource]) => {
-			this.vertexShader = this.loadShader(
+			this.vertexShader = loadShader(
 				gl.VERTEX_SHADER,
 				vertexSource,
 			);
-			this.fragmentShader = this.loadShader(
+			this.fragmentShader = loadShader(
 				gl.FRAGMENT_SHADER,
 				fragmentSource,
 			);
-
-			this.program = gl.createProgram();
+			this.program = gl.createProgram() || error('Failed to create program');
 			gl.attachShader(this.program, this.vertexShader);
 			gl.attachShader(this.program, this.fragmentShader);
 			gl.linkProgram(this.program);
@@ -77,13 +82,6 @@ export class Shader implements Destroyable, Loadable {
 					gl.getProgramInfoLog(this.program),
 				);
 			}
-
-			this.attributesCache = new SimpleCache((name) =>
-				gl.getAttribLocation(this.program, name),
-			);
-			this.uniformsCache = new SimpleCache((name) =>
-				gl.getUniformLocation(this.program, name),
-			);
 		});
 	}
 
@@ -102,7 +100,6 @@ export class Shader implements Destroyable, Loadable {
 		bindedShader = this;
 		bindedTextures = {};
 		bindedTexturesCounter = -1;
-		bindedModelIndicesCount = undefined;
 	}
 
 	private requireBinded() {

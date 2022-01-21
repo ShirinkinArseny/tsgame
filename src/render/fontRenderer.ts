@@ -5,6 +5,7 @@ import {identity, Mat4, scale, translate, Vec4} from './utils/matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
 import {Loadable} from './utils/loadable';
+import {range} from './utils/lists';
 
 export enum FontStyle {
 	NORMAL, BOLD
@@ -14,15 +15,29 @@ export enum Align {
 	LEFT, RIGHT, CENTER
 }
 
-const fontStyles = [FontStyle.NORMAL, FontStyle.BOLD];
-
-const alphabet = [
+const styledAlphabet = [
 	'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
 	'abcdefghijklmnopqrstuvwxyz',
 	'1234567890.,:;=~\'"!$%^?*()[]<>_+-|/\\',
 	'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ',
 	'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',
-	'○◐●△◭▲'
+];
+
+const symbolicAlphabet = [
+	'○◐●△◭▲',
+];
+
+const alphabet = [
+	...range(0, 1).map(fontStyleIdx => styledAlphabet.map(line =>
+		line.split('').map(char => ({
+			char: char,
+			style: fontStyleIdx
+		}))
+	)).flat(1),
+	...symbolicAlphabet.map(line => line.split('').map(char => ({
+		char: char,
+		style: FontStyle.NORMAL
+	})))
 ];
 
 const spaceWidth = 4;
@@ -34,57 +49,45 @@ export type Text = {
 
 export class FontRenderer implements Destroyable, Loadable {
 
-	private fontImage: ImageTexture;
-	private mainRectangle: Rect;
-	private symbolRectangles: { [k: number]: { [k: string]: [number, Rect] } };
-	private shader: LoadableShader;
-	private lineHeight: number;
-
-	constructor() {
-		this.mainRectangle = new Rect(0, 0, 1, 1);
-		this.shader = new LoadableShader('font');
-		this.fontImage = new ImageTexture('font2.png');
-	}
+	private readonly fontImage: ImageTexture = new ImageTexture('font2.png');
+	private readonly mainRectangle: Rect = new Rect(0, 0, 1, 1);
+	private symbolRectangles = new Map<FontStyle, Map<string, [number, Rect]>>();
+	private shader: LoadableShader = new LoadableShader('font');
+	private lineHeight: number = 0;
 
 	load() {
 		return Promise.all([
 			this.shader.load(),
 			this.fontImage.load()
 				.then(i => {
-
 					const [lineHeight, lines] = splitImage(i);
 					this.lineHeight = lineHeight;
-					const a = Object.fromEntries(
-						fontStyles.map((style, styleIdx) => [
-							style,
-							Object.fromEntries(
-								alphabet
-									.map((line, lineIdx) => {
-										const bounds = lines[lineIdx + styleIdx * alphabet.length];
-										return line.split('').map((symbol, symbolIdx) => {
-											const bound = bounds[symbolIdx];
-											if (!bound) {
-												throw new Error('WTF?');
-											}
-											const yy = (lineIdx + styleIdx * alphabet.length) * (lineHeight + 2);
-											const args = [
-												(bound[0]),
-												yy,
-												(bound[1] + 1),
-												yy + lineHeight,
-											];
-											const w = bound[1] - bound[0] + 1;
-											return [symbol, [w, new Rect(
-												...args.map(v => v / i.width)
-											)]];
-										});
-									})
-									.flat(1)
-							)
-						])
-					);
-					this.symbolRectangles = a;
+					alphabet.forEach((line, lineIdx) => {
+						const bounds = lines[lineIdx];
+						return line.forEach(
+							(v, symbolIdx) => {
+								const char = v.char;
+								const style = v.style;
+								const bound = bounds[symbolIdx];
+								if (!bound) {
+									throw new Error('WTF?');
+								}
+								const yy = lineIdx * (lineHeight + 2);
+								const args = [
+									(bound[0]),
+									yy,
+									(bound[1] + 1),
+									yy + lineHeight,
+								];
+								const w = bound[1] - bound[0] + 1;
 
+								const styleMap = this.symbolRectangles.get(style) || new Map<string, [number, Rect]>();
+								this.symbolRectangles.set(style, styleMap);
+								styleMap.set(char, [w, new Rect(
+									...args.map(v => v / i.width)
+								)]);
+							});
+					});
 				})
 		]);
 	}
@@ -92,7 +95,7 @@ export class FontRenderer implements Destroyable, Loadable {
 	destroy() {
 		this.fontImage.destroy();
 		this.mainRectangle.destroy();
-		Object.values(this.symbolRectangles).flat()
+		this.symbolRectangles.valuesList().flat()
 			.map(v => Object.values(v))
 			.flat(1)
 			.map(v => v[1]).forEach(r => r.destroy());
@@ -102,7 +105,7 @@ export class FontRenderer implements Destroyable, Loadable {
 	private drawSymbol(
 		symbol: string, x: number, y: number, fontStyle: FontStyle
 	): number {
-		const letter = this.symbolRectangles[fontStyle][symbol];
+		const letter = this.symbolRectangles.get(fontStyle)?.get(symbol);
 		if (!letter) return spaceWidth;
 		this.shader.setMatrix(
 			'modelMatrix',
@@ -123,7 +126,7 @@ export class FontRenderer implements Destroyable, Loadable {
 		kerning = 1.0
 	): number {
 		return str.split('').map(s => {
-			const ss = this.symbolRectangles[fontStyle][s];
+			const ss = this.symbolRectangles.get(fontStyle)?.get(s);
 			if (!ss) return spaceWidth;
 			return ss[0];
 		}).reduce((a, b) => a + b + kerning, 0);

@@ -5,16 +5,15 @@ import {Bimap} from '../render/utils/bimap';
 
 
 class AbstractCharacterState {
-	readonly node: FieldNode;
 
-
-	constructor(node: FieldNode) {
-		this.node = node;
+	constructor(public readonly node: FieldNode) {
 	}
 
 }
 
 export class CharacterCalmState extends AbstractCharacterState {
+
+	public readonly kind = 'CharacterCalmState';
 
 	constructor(node: FieldNode) {
 		super(node);
@@ -23,15 +22,11 @@ export class CharacterCalmState extends AbstractCharacterState {
 }
 
 export class CharacterMovingState extends AbstractCharacterState {
-	readonly from: FieldNode;
-	readonly to: FieldNode;
-	readonly phase: number;
 
-	constructor(from: FieldNode, to: FieldNode, phase: number) {
+	public readonly kind = 'CharacterMovingState';
+
+	constructor(public readonly from: FieldNode, public readonly to: FieldNode, public readonly phase: number) {
 		super(from);
-		this.from = from;
-		this.to = to;
-		this.phase = phase;
 	}
 
 }
@@ -39,17 +34,11 @@ export class CharacterMovingState extends AbstractCharacterState {
 export type CharacterState = CharacterCalmState | CharacterMovingState;
 
 class CharacterMotion {
-	readonly startedAt: number;
-	readonly path: FieldNode[];
-
 	constructor(
-		startedAt: number,
-		path: FieldNode[]
+		public readonly startedAt: number,
+		public readonly path: FieldNode[]
 	) {
-		this.startedAt = startedAt;
-		this.path = path;
 	}
-
 }
 
 export class GameField {
@@ -128,10 +117,9 @@ export class GameField {
 	}
 
 	moveCharacter(character: Character, to: FieldNode) {
-		const path = this.findPath(
-			this.characters.getB(character),
-			to
-		);
+		const from = this.characters.getB(character);
+		if (!from) return;
+		const path = this.findPath(from, to);
 		const date = new Date().getTime();
 		this.charactersMotions.set(character, new CharacterMotion(
 			date, path
@@ -139,7 +127,6 @@ export class GameField {
 	}
 
 	getCharacterState(character: Character): CharacterState {
-		if (!character) return;
 		const motion = this.charactersMotions.get(character);
 		if (motion) {
 			const time = new Date().getTime();
@@ -159,10 +146,15 @@ export class GameField {
 				);
 			}
 		}
-		return new CharacterCalmState(this.characters.getB(character));
+		const field = this.characters.getB(character);
+		if (!field) {
+			throw new Error('It is weird, but seems like character is not belong to this world');
+		}
+		return new CharacterCalmState(field);
 	}
 
-	getCharacterAt(node: FieldNode) {
+	getCharacterAt(node: FieldNode | undefined): Character | undefined {
+		if (!node) return undefined;
 		return this.characters.getA(node);
 	}
 }
