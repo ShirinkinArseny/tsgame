@@ -1,7 +1,7 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
-import {Align, FontStyle} from './fontRenderer';
+import {Align, FontStyle, ShadowStyle} from './fontRenderer';
 import {Rect} from './shapes/rect';
 import {identity, Mat4, multiplyMatToVec, scale, translate, Vec4} from './utils/matrices';
 import {fontRenderer, texturedShader} from '../sharedResources';
@@ -118,6 +118,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 			projMatrix,
 			Align.LEFT,
 			1,
+			ShadowStyle.DIAGONAL,
 			a
 		);
 

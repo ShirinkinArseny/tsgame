@@ -15,6 +15,12 @@ export enum Align {
 	LEFT, RIGHT, CENTER
 }
 
+export enum ShadowStyle {
+	NO,
+	DIAGONAL,
+	STROKE
+}
+
 const styledAlphabet = [
 	'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
 	'abcdefghijklmnopqrstuvwxyz',
@@ -172,11 +178,23 @@ export class FontRenderer implements Destroyable, Loadable {
 		projectionMatrix: Mat4,
 		align: Align = Align.LEFT,
 		kerning = 1.0,
-		shadowColor: Vec4 | undefined = undefined
+		shadowStyle: ShadowStyle = ShadowStyle.NO,
+		shadowColor: Vec4 = [0, 0, 0, 0.7]
 	) {
-		this.initRenderingText(projectionMatrix, shadowColor || color);
-		if (shadowColor) {
-			this.doDrawString(text, x + 1, y + 1, kerning, fontStyle, align);
+		this.initRenderingText(projectionMatrix, shadowStyle === ShadowStyle.NO ? color : shadowColor);
+		if (shadowStyle !== ShadowStyle.NO) {
+			if (shadowStyle === ShadowStyle.DIAGONAL) {
+				this.doDrawString(text, x + 1, y + 1, kerning, fontStyle, align);
+			}
+			if (shadowStyle === ShadowStyle.STROKE) {
+				for (let dx = -1; dx <= 1; dx++) {
+					for (let dy = -1; dy <= 1; dy++) {
+						if (dx !== 0 || dy !== 0) {
+							this.doDrawString(text, x + dx, y + dy, kerning, fontStyle, align);
+						}
+					}
+				}
+			}
 			this.initRenderingTextColor(color);
 		}
 		this.doDrawString(text, x, y, kerning, fontStyle, align);

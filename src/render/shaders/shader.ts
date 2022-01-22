@@ -116,7 +116,7 @@ export class Shader implements Destroyable, Loadable {
 		const idx = bindedTextures[name] || ++bindedTexturesCounter;
 		bindedTextures[name] = idx;
 		gl.activeTexture(getTextureLayer(idx));
-		gl.bindTexture(gl.TEXTURE_2D, texture.targetTexture);
+		gl.bindTexture(gl.TEXTURE_2D, texture.getTargetTexture());
 		gl.uniform1i(this.uniformsCache.get(name), idx);
 	}
 

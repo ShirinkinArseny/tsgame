@@ -2,22 +2,23 @@ import {Texture} from './texture';
 import {error} from '../utils/errors';
 import {gl} from '../../globalContext';
 
-export class FBO extends Texture {
+export class FBO implements Texture {
 
 
 	private readonly fb: WebGLFramebuffer;
 	private readonly depthBuffer: WebGLRenderbuffer;
 	readonly width: number;
 	readonly height: number;
+	private readonly texture: WebGLTexture;
 
 	constructor(
 		width: number,
 		height: number
 	) {
-		super(gl.createTexture() || error('Failed to create texture'));
+		this.texture = gl.createTexture() || error('Failed to create texture');
 		this.width = width;
 		this.height = height;
-		gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+		gl.bindTexture(gl.TEXTURE_2D, this.getTargetTexture());
 
 		this.depthBuffer = gl.createRenderbuffer() || error('Failed to create renderbuffer');
 		gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthBuffer);
@@ -47,7 +48,7 @@ export class FBO extends Texture {
 		const attachmentPoint = gl.COLOR_ATTACHMENT0;
 		gl.framebufferTexture2D(
 			gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D,
-			this.targetTexture, level,
+			this.texture, level,
 		);
 
 		gl.renderbufferStorage(gl.RENDERBUFFER,
@@ -57,6 +58,10 @@ export class FBO extends Texture {
 			gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER,
 			this.depthBuffer);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	}
+
+	getTargetTexture(): WebGLTexture {
+		return this.texture;
 	}
 
 	bind() {
@@ -74,7 +79,7 @@ export class FBO extends Texture {
 	}
 
 	destroy() {
-		gl.deleteTexture(this.targetTexture);
+		gl.deleteTexture(this.texture);
 	}
 
 }

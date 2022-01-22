@@ -90,8 +90,8 @@ const render = () => {
 		gl.viewport(0, 0, displayWidth, displayHeight);
 		gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
-		gl.enable(gl.BLEND);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		scene.render(displayWidth, displayHeight, diff);
