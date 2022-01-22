@@ -108,8 +108,8 @@ export class GameFieldScene implements Scene {
 		const state = this.gameField.getCharacterState(character);
 		switch (state.kind) {
 		case 'CharacterCalmState': {
-			const _01 = (new Date().getTime() % 1000) / 500 > 1 ? 0 : 1;
-			return this.animRects.length - 2 + _01;
+			const l = Math.floor(((new Date().getTime() % 499) / 250));
+			return this.animRects.length - 2 + l;
 		}
 		case 'CharacterMovingState': {
 			const frames = 5;
