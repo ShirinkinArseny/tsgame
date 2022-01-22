@@ -71,6 +71,26 @@ export class GameField {
 			),
 			this.graph[4]
 		);
+		this.characters.set(
+			new Character(
+				'<-XxX-[PRO.DeaШoN]-XxX->',
+				'main',
+				5,
+				5,
+				400
+			),
+			this.graph[20]
+		);
+		this.characters.set(
+			new Character(
+				'Вася',
+				'main',
+				5,
+				5,
+				400
+			),
+			this.graph[63]
+		);
 	}
 
 	getCharacters() {

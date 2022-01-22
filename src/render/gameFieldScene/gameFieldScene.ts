@@ -55,9 +55,9 @@ export class GameFieldScene implements Scene {
 	y: number = 0;
 	px: number = 0;
 	py: number = 0;
-	highlight: Map<FieldNode, Vec4> = new Map();
 	selectedCharacter: Character | undefined;
 	pathToMove: FieldNode[] = [];
+	isNodeInPathToMove = new Map<FieldNode, boolean>();
 
 	private selectedNode() {
 		return this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter).node;
@@ -85,23 +85,6 @@ export class GameFieldScene implements Scene {
 		this.icons.destroy();
 		this.animRects.forEach(r => r.destroy());
 		this.iconRects.forEach(r => r.destroy());
-	}
-
-	private drawShape(node: FieldNode, fillColor: Vec4 = [0.8, 0.8, 0.8, 1], borderColor: Vec4 = [1, 1, 1, 1]) {
-		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
-		const isSelectedNode = this.selectedNode() === node;
-		if (isSelectedNode) {
-			coloredShader.setVector4f('borderColor', [0, 0.8, 0, 1]);
-			coloredShader.set1f('borderWidth', 3);
-		} else {
-			coloredShader.setVector4f('borderColor', borderColor);
-			coloredShader.set1f('borderWidth', 2);
-		}
-		coloredShader.setVector4f('fillColor',
-			this.highlight.get(node) || fillColor
-		);
-		coloredShader.setModel('aVertexPosition', shape);
-		coloredShader.draw();
 	}
 
 	private getCharacterPosition(character: Character): Vec2 {
@@ -139,6 +122,26 @@ export class GameFieldScene implements Scene {
 		}
 	}
 
+	private drawShape(node: FieldNode, fillColor: Vec4 = [0.8, 0.8, 0.8, 1], borderColor: Vec4 = [1, 1, 1, 1]) {
+		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
+		const isSelectedNode = this.selectedNode() === node;
+		const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
+		if (isSelectedNode && characterState instanceof CharacterCalmState) {
+			coloredShader.setVector4f('borderColor', [0, 0, 0, 1]);
+			coloredShader.set1f('borderWidth', 3);
+		} else {
+			coloredShader.setVector4f('borderColor', borderColor);
+			coloredShader.set1f('borderWidth', 2);
+		}
+		if (characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node)) {
+			coloredShader.setVector4f('fillColor', [0.6, 0.6, 0.6, 1.0]);
+		} else {
+			coloredShader.setVector4f('fillColor', fillColor);
+		}
+		coloredShader.setModel('aVertexPosition', shape);
+		coloredShader.draw();
+	}
+
 	render(w: number, h: number) {
 		const angle = (new Date().getTime() % 60000) / 60000 * Math.PI * 2;
 		this.worldToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
@@ -156,32 +159,41 @@ export class GameFieldScene implements Scene {
 		this.pxToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
 		this.screenToPx = reverse(this.pxToScreen);
 
-		this.gameField.getCharacters().forEach((character) => {
-			texturedShader.useProgram();
-			texturedShader.setTexture('texture', this.animtex);
-			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-			texturedShader.setModel('aVertexPosition', this.rect);
-			texturedShader.setModel('aTexturePosition', this.animRects[this.getCharacterFrame(character)]);
-			let c = toVec4(this.getCharacterPosition(character));
-			const rot = rotate(identity(), angle, [0, 0, 1]);
-			c = multiplyMatToVec(rot, c) as Vec4;
-			texturedShader.setMatrix(
-				'modelMatrix',
-				translate(identity(), [c[0], c[1], 0]),
-			);
-			texturedShader.draw();
-			fontRenderer.drawString(
-				character.name + ' ' + hpbar(character.hp, character.maxHp),
-				c[0] + 16, c[1] - 40,
-				FontStyle.BOLD,
-				[1, 1, 1, 1],
-				this.pxToScreen,
-				Align.CENTER,
-				1,
-				ShadowStyle.STROKE,
-				[0, 0, 0, 1],
-			);
-		});
+
+		this.gameField.getCharacters()
+			.map((character) => {
+				let c = toVec4(this.getCharacterPosition(character));
+				const rot = rotate(identity(), angle, [0, 0, 1]);
+				c = multiplyMatToVec(rot, c) as Vec4;
+				return {
+					character: character,
+					point: c
+				};
+			})
+			.sort((a, b) => a.point[1] - b.point[1])
+			.forEach(({character, point}) => {
+				texturedShader.useProgram();
+				texturedShader.setTexture('texture', this.animtex);
+				texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
+				texturedShader.setModel('aVertexPosition', this.rect);
+				texturedShader.setModel('aTexturePosition', this.animRects[this.getCharacterFrame(character)]);
+				texturedShader.setMatrix(
+					'modelMatrix',
+					translate(identity(), [point[0], point[1], 0]),
+				);
+				texturedShader.draw();
+				fontRenderer.drawString(
+					character.name + ' ' + hpbar(character.hp, character.maxHp),
+					point[0] + 16, point[1] - 40,
+					FontStyle.BOLD,
+					[1, 1, 1, 1],
+					this.pxToScreen,
+					Align.CENTER,
+					1,
+					ShadowStyle.STROKE,
+					[0, 0, 0, 1],
+				);
+			});
 
 		if (this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter) instanceof CharacterCalmState) {
 			const node = this.hoveredNode;
@@ -232,11 +244,11 @@ export class GameFieldScene implements Scene {
 	}
 
 	private updatePath() {
-		this.highlight.clear();
 		const selectedNode = this.selectedNode();
 		if (!selectedNode || !this.hoveredNode) return;
 		this.pathToMove = this.gameField.findPath(selectedNode, this.hoveredNode);
-		this.pathToMove.forEach(f => this.highlight.set(f, [0.8, 1.0, 0.8, 1.0]));
+		this.isNodeInPathToMove.clear();
+		this.pathToMove.forEach((n) => this.isNodeInPathToMove.set(n, true));
 	}
 
 	update(dt: number, pressedKeyMap: Map<string, boolean>, cursorX: number, cursorY: number,
@@ -247,8 +259,6 @@ export class GameFieldScene implements Scene {
 		[this.wx, this.wy] = multiplyMatToVec(this.screenToWorld, [cursorX, cursorY, 0, 1]);
 		[this.px, this.py] = multiplyMatToVec(this.screenToPx, [cursorX, cursorY, 0, 1]);
 		[this.x, this.y] = [cursorX, cursorY];
-		const oldHoveredNode = this.hoveredNode;
-		const oldSelectedNode = this.selectedNode();
 		this.hoveredNode = this.gameField.getNodes().find((node) =>
 			isPointInConvexShape([this.wx, this.wy], node.points)
 		);
@@ -256,14 +266,15 @@ export class GameFieldScene implements Scene {
 			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
 			if (!newSelectedCharacter && this.selectedCharacter && this.hoveredNode) {
 				this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
-				this.highlight.clear();
 			} else {
 				this.selectedCharacter = newSelectedCharacter;
 			}
 		}
-		if (oldHoveredNode !== this.hoveredNode || this.selectedNode() !== oldSelectedNode) {
+		const cs = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
+		if (cs instanceof CharacterCalmState) {
 			this.updatePath();
 		}
+
 	}
 
 
