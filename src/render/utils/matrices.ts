@@ -124,6 +124,16 @@ export function skewX(matrix: Mat4, angleRad: number) {
 	return res;
 }
 
+export function getSkewXmatrix(angle) {
+	return [
+		1, 0, 0, 0,
+		Math.tan(angle), 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	];
+}
+
+
 export function multiplyMat4Mat4(mat1: Mat4, mat2: Mat4): Mat4 {
 
 	const mat1Mat = arrayToMat(mat1);

@@ -3,6 +3,7 @@ import {CharacterCalmState, GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
 import {
+	getSkewXmatrix,
 	identity,
 	Mat4,
 	multiplyMatToVec,
@@ -67,7 +68,12 @@ export class GameFieldScene implements Scene {
 		private readonly gameField: GameField
 	) {
 		gameField.getNodes().forEach(node => {
-			const shape = new BorderedShape(node.points);
+			const skewMatrix = getSkewXmatrix(Math.PI/6);
+			const newPoints = node.points.map(point => {
+				const np = multiplyMatToVec(skewMatrix, toVec4(point));
+				return [np[0], np[1]];
+			});
+			const shape = new BorderedShape(newPoints);
 			this.nodeToShapeMap.set(node, shape);
 		});
 	}
@@ -143,12 +149,12 @@ export class GameFieldScene implements Scene {
 	}
 
 	render(w: number, h: number) {
-		const angle = (new Date().getTime() % 60000) / 60000 * Math.PI * 2;
+		const angle = 0//(new Date().getTime() % 60000) / 60000 * Math.PI * 2;
 		this.worldToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
 
 
-		this.worldToScreen = scale(this.worldToScreen, [1, 0.8, 1]);
-		this.worldToScreen = skewX(this.worldToScreen, Math.PI / 6);
+		//this.worldToScreen = scale(this.worldToScreen, [1, 0.8, 1]);
+		//this.worldToScreen = skewX(this.worldToScreen, Math.PI / 6);
 		rotate(this.worldToScreen, angle, [0, 0, 1]);
 		this.screenToWorld = reverse(this.worldToScreen);
 		coloredShader.useProgram();
