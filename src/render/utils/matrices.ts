@@ -112,6 +112,42 @@ export function rotate(matrix: Mat4, rad: number, axis: Vec3) {
 	return matrix;
 }
 
+export function skewX(matrix: Mat4, angleRad: number) {
+	const skewMatrix: Mat4 = [
+		1, 0, 0, 0,
+		Math.tan(angleRad), 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	];
+
+	const res = multiplyMat4Mat4(matrix, skewMatrix);
+	return res;
+}
+
+export function multiplyMat4Mat4(mat1: Mat4, mat2: Mat4): Mat4 {
+
+	const mat1Mat = arrayToMat(mat1);
+	const mat2MatF = arrayToMat(mat2);
+	let result: number[][] = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
+
+	result = result.map((row, i) => {
+		return row.map((num, j) => {
+			return mat2MatF[0][j] * mat1Mat[i][0] + mat2MatF[1][j] * mat1Mat[i][1] + mat2MatF[2][j] * mat1Mat[i][2] + mat2MatF[3][j] * mat1Mat[i][3];
+		});
+	});
+
+	return result.flat(1) as Mat4;
+}
+
+function arrayToMat(array: Mat4): number[][] {
+	const n = 4;
+	const res: number[][] = [[], [], [], []];
+	array.forEach((num: number, i) => {
+		res[Math.floor(i / n)][i % n] = num;
+	});
+	return res;
+}
+
 export function ortho(
 	left: number,
 	right: number,

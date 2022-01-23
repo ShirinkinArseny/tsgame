@@ -9,7 +9,7 @@ import {
 	ortho,
 	reverse,
 	rotate,
-	scale,
+	scale, skewX,
 	translate,
 	Vec2,
 	Vec4
@@ -146,6 +146,9 @@ export class GameFieldScene implements Scene {
 		const angle = (new Date().getTime() % 60000) / 60000 * Math.PI * 2;
 		this.worldToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
 
+
+		this.worldToScreen = scale(this.worldToScreen, [1, 0.8, 1]);
+		this.worldToScreen = skewX(this.worldToScreen, Math.PI / 6);
 		rotate(this.worldToScreen, angle, [0, 0, 1]);
 		this.screenToWorld = reverse(this.worldToScreen);
 		coloredShader.useProgram();
