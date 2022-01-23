@@ -2,6 +2,8 @@ import {getGraph} from './field/fiveField';
 import {FieldNode} from './field/fieldNode';
 import {Character} from './character';
 import {Bimap} from '../render/utils/bimap';
+import {getSkewXmatrix, multiplyMatToVec} from '../render/utils/matrices';
+import {toVec2, toVec4} from '../render/utils/geom';
 
 
 class AbstractCharacterState {
@@ -48,7 +50,20 @@ export class GameField {
 	private readonly charactersMotions: Map<Character, CharacterMotion>;
 
 	constructor() {
-		this.graph = getGraph(100, 100, -100, -100, 20);
+
+		const graph = getGraph(100, 100, -100, -100, 20);
+		const skewMatrix = getSkewXmatrix(Math.PI / 6);
+		graph.forEach(node => {
+			const list = [...node.points];
+			node.points.splice(0, node.points.length);
+			node.points.push(
+				...list.map(point => toVec2(multiplyMatToVec(skewMatrix, toVec4(point))))
+			);
+			node.recalcCenter();
+		});
+
+
+		this.graph = graph;
 		this.charactersMotions = new Map<Character, CharacterMotion>();
 		this.characters = new Bimap<Character, FieldNode>();
 		this.characters.set(

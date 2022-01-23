@@ -5,7 +5,7 @@ export class FieldNode {
 
 	readonly points: Array<Vec2>;
 	readonly nodes: FieldNode[];
-	readonly center: Vec2;
+	center: Vec2;
 
 	constructor(points: Array<Vec2>) {
 		this.points = points;
@@ -20,4 +20,9 @@ export class FieldNode {
 		this.nodes.push(node);
 		node.linkToNode(this);
 	}
+
+	recalcCenter() {
+		this.center = center(this.points);
+	}
+
 }

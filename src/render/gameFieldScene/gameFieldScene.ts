@@ -63,12 +63,7 @@ export class GameFieldScene implements Scene {
 		private readonly gameField: GameField
 	) {
 		gameField.getNodes().forEach(node => {
-			const skewMatrix = getSkewXmatrix(Math.PI/6);
-			const newPoints = node.points.map(point => {
-				const np = multiplyMatToVec(skewMatrix, toVec4(point));
-				return [np[0], np[1]];
-			});
-			const shape = new BorderedShape(newPoints);
+			const shape = new BorderedShape(node.points);
 			this.nodeToShapeMap.set(node, shape);
 		});
 	}

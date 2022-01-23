@@ -88,17 +88,22 @@ export function isPointInConvexShape(
 	return true;
 }
 
-export function toVec4(vec: number[]): Vec4 {
-	if (vec.length === 4) return vec as Vec4;
-	if (vec.length > 4) return vec.slice(0, 3) as Vec4;
+export function toVecN(vec: number[], n: number): number[] {
+	if (vec.length === n) return vec;
+	if (vec.length > n) return vec.slice(0, n);
 	const res = [...vec];
-	while (res.length < 3) {
+	while (res.length < n) {
 		res.push(0);
 	}
-	while (res.length < 4) {
-		res.push(1);
-	}
-	return res as Vec4;
+	return res;
+}
+
+export function toVec2(vec: number[]): Vec2 {
+	return toVecN(vec, 2) as Vec2;
+}
+
+export function toVec4(vec: number[]): Vec4 {
+	return toVecN(vec, 4) as Vec4;
 }
 
 export function center(points: Vec2[]): Vec2 {
