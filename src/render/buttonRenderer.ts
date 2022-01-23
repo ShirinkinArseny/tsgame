@@ -1,10 +1,10 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
-import {ImageTexture} from './textures/imageTexture';
 import {Align, FontStyle, ShadowStyle} from './fontRenderer';
 import {Rect} from './shapes/rect';
 import {identity, Mat4, multiplyMatToVec, scale, translate, Vec4} from './utils/matrices';
 import {fontRenderer, texturedShader} from '../sharedResources';
+import {TextureMap} from './textureMap';
 
 interface ButtonContent {
 	title: string;
@@ -14,14 +14,11 @@ interface ButtonContent {
 
 export class ButtonRenderer implements Loadable, Destroyable {
 
-	texture: ImageTexture = new ImageTexture('button.png');
+	textureMap: TextureMap = new TextureMap('ui/button/button');
+
+
 	r: Rect = new Rect(0, 0, 1, 16);
-	r1: Rect = new Rect(0, 0, 6 / 64, 1);
-	r2: Rect = new Rect(6 / 64, 0, 7 / 32, 1);
-	r3: Rect = new Rect(26 / 64, 0, 32 / 64, 1);
-	r4: Rect = new Rect(1 / 2 + 0, 0, 1 / 2 + 6 / 64, 1);
-	r5: Rect = new Rect(1 / 2 + 6 / 64, 0, 1 / 2 + 7 / 32, 1);
-	r6: Rect = new Rect(1 / 2 + 26 / 64, 0, 1 / 2 + 32 / 64, 1);
+
 	cx: number = 0;
 	cy: number = 0;
 	pressed: boolean = false;
@@ -70,12 +67,15 @@ export class ButtonRenderer implements Loadable, Destroyable {
 			}
 		}
 
-		const [r1, r2, r3] = hovered ? [this.r4, this.r5, this.r6] : [this.r1, this.r2, this.r3];
-
+		const [r1, r2, r3] = this.textureMap.getRects(
+			hovered
+				? (this.pressed ? 'Pressed' : 'Hovered')
+				: 'Idle'
+		);
 
 		texturedShader.useProgram();
 
-		texturedShader.setTexture('texture', this.texture);
+		texturedShader.setTexture('texture', this.textureMap.texture);
 		texturedShader.setMatrix('projectionMatrix', projMatrix);
 		texturedShader.setMatrix(
 			'modelMatrix',
@@ -85,7 +85,6 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setModel('aTexturePosition', r1);
 		texturedShader.draw();
 
-		texturedShader.setTexture('texture', this.texture);
 		texturedShader.setMatrix('projectionMatrix', projMatrix);
 		texturedShader.setMatrix(
 			'modelMatrix',
@@ -95,7 +94,6 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setModel('aTexturePosition', r2);
 		texturedShader.draw();
 
-		texturedShader.setTexture('texture', this.texture);
 		texturedShader.setMatrix('projectionMatrix', projMatrix);
 		texturedShader.setMatrix(
 			'modelMatrix',
@@ -129,15 +127,13 @@ export class ButtonRenderer implements Loadable, Destroyable {
 	load(): Promise<any> {
 		return Promise.all(
 			[
-				this.texture.load(),
-				fontRenderer.load(),
+				this.textureMap.load()
 			]
 		);
 	}
 
 	destroy() {
-		this.texture.destroy();
-		fontRenderer.destroy();
+		this.textureMap.destroy();
 	}
 
 

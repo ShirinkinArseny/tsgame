@@ -44,13 +44,12 @@ export class Shader implements Destroyable, Loadable {
 	private vertexShader!: WebGLShader;
 	private fragmentShader!: WebGLShader;
 	private program!: WebGLProgram;
+	private loaded: boolean = false;
 	private attributesCache: SimpleCache<string, number> = new SimpleCache((name) =>
 		gl.getAttribLocation(this.program, name),
 	);
 	private uniformsCache: SimpleCache<string, WebGLUniformLocation> = new SimpleCache((name) => {
-		const v = gl.getUniformLocation(this.program, name);
-		if (!v) throw new Error('No uniform found for name ' + name);
-		return v;
+		return gl.getUniformLocation(this.program, name) || error('No uniform found for name ' + name);
 	});
 
 	constructor(
@@ -82,6 +81,7 @@ export class Shader implements Destroyable, Loadable {
 					gl.getProgramInfoLog(this.program),
 				);
 			}
+			this.loaded = true;
 		});
 	}
 
@@ -96,6 +96,9 @@ export class Shader implements Destroyable, Loadable {
 	}
 
 	useProgram() {
+		if (!this.loaded) {
+			throw new Error('Trying to use shader while it is not loaded yet');
+		}
 		gl.useProgram(this.program);
 		bindedShader = this;
 		bindedTextures = {};
