@@ -69,7 +69,7 @@ export class GameField {
 				5,
 				400
 			),
-			this.graph[4]
+			this.graph[1]
 		);
 		this.characters.set(
 			new Character(
@@ -79,7 +79,7 @@ export class GameField {
 				5,
 				400
 			),
-			this.graph[20]
+			this.graph[2]
 		);
 		this.characters.set(
 			new Character(
@@ -89,7 +89,7 @@ export class GameField {
 				5,
 				400
 			),
-			this.graph[63]
+			this.graph[3]
 		);
 	}
 

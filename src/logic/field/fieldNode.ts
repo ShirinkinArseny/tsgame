@@ -1,5 +1,5 @@
-import {Vec2} from '../../render/utils/matrices';
 import {center} from '../../render/utils/geom';
+import {Vec2} from '../../render/utils/vector';
 
 export class FieldNode {
 

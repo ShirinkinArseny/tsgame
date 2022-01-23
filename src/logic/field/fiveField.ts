@@ -1,6 +1,6 @@
-import {degreesToRadians, rotatePoint, translatePoint} from '../../render/utils/geom';
-import {Vec2} from '../../render/utils/matrices';
+import {degreesToRadians, rotatePoint} from '../../render/utils/geom';
 import {FieldNode} from './fieldNode';
+import {vec2, Vec2, vecSum} from '../../render/utils/vector';
 
 function getCrossPoints(boundRight = 20, boundUp = 20, boundLeft = 0, boundDown = 0, shapeSize = 1) {
 	const crossCenterPoints: Array<Vec2> = [];
@@ -10,7 +10,7 @@ function getCrossPoints(boundRight = 20, boundUp = 20, boundLeft = 0, boundDown 
 	const xDiff = xInt - xx;
 	for (let x = xInt; x * shapeSize < boundRight; x += 1) {
 		for (let y = [2, 0, 3, 1, 4][((x % 5) + 5) % 5] + boundDown / shapeSize; y * shapeSize < boundUp; y += 5) {
-			crossCenterPoints.push([x * shapeSize - xDiff, y * shapeSize]);
+			crossCenterPoints.push(vec2(x * shapeSize - xDiff, y * shapeSize));
 		}
 	}
 
@@ -64,13 +64,14 @@ export function getGraph(
 
 function getCrossFiveShapes(crossCenter: Vec2, shapeSize = 1): Array<Array<Vec2>> {
 	const upFiveAngle: Vec2[] = [
-		[0, 0],
-		[0.5 * shapeSize, -0.5 * shapeSize],
-		[0.5 * shapeSize, -1.5 * shapeSize],
-		[-0.5 * shapeSize, -1.5 * shapeSize],
-		[-0.5 * shapeSize, -0.5 * shapeSize]];
+		vec2(0, 0),
+		vec2(0.5 * shapeSize, -0.5 * shapeSize),
+		vec2(0.5 * shapeSize, -1.5 * shapeSize),
+		vec2(-0.5 * shapeSize, -1.5 * shapeSize),
+		vec2(-0.5 * shapeSize, -0.5 * shapeSize)
+	];
 	const translatedFiveAngle = upFiveAngle.map((point: Vec2) => {
-		return translatePoint(point, crossCenter);
+		return vecSum(point, crossCenter);
 	});
 	const cross = [
 		rotateShape(translatedFiveAngle, 0, crossCenter),
@@ -81,10 +82,12 @@ function getCrossFiveShapes(crossCenter: Vec2, shapeSize = 1): Array<Array<Vec2>
 	return cross;
 }
 
-function rotateShape(shape: number[][], angleDeg: number, origin: [number, number] | undefined) {
-	return shape.map(point => {
-		return rotatePoint(point as Vec2, degreesToRadians(angleDeg), origin);
+function rotateShape(shape: Vec2[], angleDeg: number, origin: Vec2 | undefined) {
+	const r = shape.map(point => {
+		const rr = rotatePoint(point, degreesToRadians(angleDeg), origin);
+		return rr;
 	});
+	return r;
 }
 
 class FiveEgde {

@@ -1,42 +1,21 @@
 import {range} from './lists';
-
-export type Mat2 = [
-	number, number,
-	number, number,
-];
-export type Mat3 = [
-	number, number, number,
-	number, number, number,
-	number, number, number,
-];
-export type Mat4 = [
-	number, number, number, number,
-	number, number, number, number,
-	number, number, number, number,
-	number, number, number, number,
-];
-export type Vec2 = [number, number];
-export type Vec3 = [number, number, number];
-export type Vec4 = [number, number, number, number];
+import {mat2, mat3, Mat3, mat4, Mat4, Vec3} from './vector';
 
 
 export function identity(): Mat4 {
-	return [
+	return mat4(
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1,
-	];
+	);
 }
 
 export function translate(matrix: Mat4, vector: Vec3) {
-	const x = vector[0];
-	const y = vector[1];
-	const z = vector[2];
-	matrix[12] = matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12];
-	matrix[13] = matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13];
-	matrix[14] = matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14];
-	matrix[15] = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
+	matrix[12] = matrix[0] * vector.x + matrix[4] * vector.y + matrix[8] * vector.z + matrix[12];
+	matrix[13] = matrix[1] * vector.x + matrix[5] * vector.y + matrix[9] * vector.z + matrix[13];
+	matrix[14] = matrix[2] * vector.x + matrix[6] * vector.y + matrix[10] * vector.z + matrix[14];
+	matrix[15] = matrix[3] * vector.x + matrix[7] * vector.y + matrix[11] * vector.z + matrix[15];
 	return matrix;
 }
 
@@ -117,27 +96,17 @@ export function ortho(
 	right: number,
 	bottom: number,
 	top: number,
-	near: number,
-	far: number,
 ): Mat4 {
-	const lr = 1 / (left - right);
-	const bt = 1 / (bottom - top);
-	const nf = 1 / (near - far);
 
-	return [
-		-2 * lr, 0, 0, 0,
-		0, -2 * bt, 0, 0,
-		0, 0, 2 * nf, 0,
-		(left + right) * lr, (top + bottom) * bt, (far + near) * nf, 1,
-	];
-}
+	const rl = 1 / (right - left);
+	const tb = 1 / (top - bottom);
 
-export function cutColumnRow(mat4: Mat4, x: number, y: number) {
-	return mat4.filter((v, idx) => {
-		const yy = Math.floor(idx / 4);
-		const xx = idx % 4;
-		return xx !== x && yy !== y;
-	}) as Mat3;
+	return mat4(
+		2 * rl, 0, 0, 0,
+		0, 2 * tb, 0, 0,
+		0, 0, 1, 0,
+		-(right + left) * rl, -(top + bottom) * tb, 0, 1,
+	);
 }
 
 export function det3(mat: Mat3) {
@@ -154,32 +123,33 @@ export function det4(mat: Mat4) {
 }
 
 export function transpose(mat: Mat4) {
-	return range(0, 3).map(x => range(0, 3).map(y =>
+	return mat4(...range(0, 3).map(x => range(0, 3).map(y =>
 		mat[x + y * 4]
-	)).flat() as Mat4;
+	)).flat());
 }
 
 export function reverse(mat: Mat4) {
 	const t = transpose(mat);
 	const det = det4(mat);
-	return range(0, 3)
+	return mat4(...range(0, 3)
 		.map(y => range(0, 3).map(x => Math.pow(-1, x + y) * det3(cutColumnRow(t, x, y))))
 		.flat()
-		.map(v => v / det) as Mat4;
-}
-
-export function multiplyMatToVec(matrix: number[], vector: number[]) {
-	return range(0, vector.length - 1).map(row => range(0, vector.length - 1)
-		.map(column => matrix[column * vector.length + row] * vector[column])
-		.reduce((a, b) => a + b, 0)
-	);
+		.map(v => v / det), 0);
 }
 
 export function getRotateMat2(rad: number) {
 	const s = Math.sin(rad);
 	const c = Math.cos(rad);
-	return [
+	return mat2(
 		c, -s,
 		s, c
-	];
+	);
+}
+
+export function cutColumnRow(mat4: Mat4, x: number, y: number) {
+	return mat3(...mat4.filter((v, idx) => {
+		const yy = Math.floor(idx / 4);
+		const xx = idx % 4;
+		return xx !== x && yy !== y;
+	}));
 }

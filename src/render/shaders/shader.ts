@@ -1,11 +1,11 @@
 import {SimpleCache} from '../utils/cache';
-import {Mat4, Vec3, Vec4} from '../utils/matrices';
 import {Destroyable} from '../utils/destroyable';
 import {Loadable} from '../utils/loadable';
 import {Texture} from '../textures/texture';
 import {ConvexShape} from '../shapes/convexShape';
 import {error} from '../utils/errors';
 import {gl} from '../../globalContext';
+import {Mat4, Vec3, Vec4} from '../utils/vector';
 
 let bindedShader: Shader | undefined;
 let bindedTextures: { [k: string]: number } = {};
