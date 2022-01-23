@@ -2,8 +2,8 @@ import {getGraph} from './field/fiveField';
 import {FieldNode} from './field/fieldNode';
 import {Character} from './character';
 import {Bimap} from '../render/utils/bimap';
-import {getSkewXmatrix, multiplyMatToVec} from '../render/utils/matrices';
-import {toVec2, toVec4} from '../render/utils/geom';
+import {getSkewXmatrix} from '../render/utils/matrices';
+import {multiplyMatToVec} from '../render/utils/vector';
 
 
 class AbstractCharacterState {
@@ -57,7 +57,7 @@ export class GameField {
 			const list = [...node.points];
 			node.points.splice(0, node.points.length);
 			node.points.push(
-				...list.map(point => toVec2(multiplyMatToVec(skewMatrix, toVec4(point))))
+				...list.map(point => multiplyMatToVec(skewMatrix, point.xyzw).xy)
 			);
 			node.recalcCenter();
 		});

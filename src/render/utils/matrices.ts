@@ -92,18 +92,17 @@ export function rotate(matrix: Mat4, rad: number, axis: Vec3) {
 }
 
 export function skewX(matrix: Mat4, angleRad: number) {
-	const skewMatrix: Mat4 = [
+	const skewMatrix: Mat4 = mat4(
 		1, 0, 0, 0,
 		Math.tan(angleRad), 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1
-	];
+	);
 
-	const res = multiplyMat4Mat4(matrix, skewMatrix);
-	return res;
+	return multiplyMat4Mat4(matrix, skewMatrix);
 }
 
-export function getSkewXmatrix(angle) {
+export function getSkewXmatrix(angle: number) {
 	return [
 		1, 0, 0, 0,
 		Math.tan(angle), 1, 0, 0,
