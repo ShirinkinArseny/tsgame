@@ -3,20 +3,14 @@ import {CharacterCalmState, GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
 import {
-	getSkewXmatrix,
 	identity,
-	Mat4,
-	multiplyMatToVec,
 	ortho,
 	reverse,
-	rotate,
-	scale, skewX,
+	scale,
 	translate,
-	Vec2,
-	Vec4
 } from '../utils/matrices';
 import {Rect} from '../shapes/rect';
-import {isPointInConvexShape, toVec4} from '../utils/geom';
+import {isPointInConvexShape} from '../utils/geom';
 import {ImageTexture} from '../textures/imageTexture';
 import {range} from '../utils/lists';
 import {Align, FontStyle, ShadowStyle} from '../fontRenderer';
@@ -25,6 +19,7 @@ import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
 import {buttonRenderer, coloredShader, defaultRect, fontRenderer, texturedShader} from '../../sharedResources';
 import {TextureMap} from '../textureMap';
+import {Mat4, Vec2, vec2, vec3, Vec4, vec4} from '../utils/vector';
 
 
 export class GameFieldScene implements Scene {
@@ -34,23 +29,14 @@ export class GameFieldScene implements Scene {
 	rect: Rect = new Rect(
 		-16, -26,
 		16, 6
-		/*, -0.4,
-		0.2, 0*/
 	);
 	hoveredNode: FieldNode | undefined;
-	worldToScreen: Mat4 = identity();
-	screenToWorld: Mat4 = identity();
 	pxToScreen: Mat4 = identity();
 	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	icons: ImageTexture = new ImageTexture('ui/icons/icons.png');
 	iconRects: Rect[] = range(0, 3).map(idx => new Rect(idx / 4, 0, (idx + 1) / 4, 1 / 4));
-	wx: number = 0;
-	wy: number = 0;
-	x: number = 0;
-	y: number = 0;
-	px: number = 0;
-	py: number = 0;
+	pointer: Vec4 = vec4();
 	selectedCharacter: Character | undefined;
 	pathToMove: FieldNode[] = [];
 	isNodeInPathToMove = new Map<FieldNode, boolean>();
@@ -91,10 +77,10 @@ export class GameFieldScene implements Scene {
 			const a = state.from.center;
 			const b = state.to.center;
 			const p = state.phase;
-			return [
-				a[0] * (1 - p) + b[0] * p,
-				a[1] * (1 - p) + b[1] * p,
-			];
+			return vec2(
+				a.x * (1 - p) + b.x * p,
+				a.y * (1 - p) + b.y * p,
+			);
 		}
 		}
 	}
@@ -105,26 +91,29 @@ export class GameFieldScene implements Scene {
 		case 'CharacterCalmState':
 			return 'Idle';
 		case 'CharacterMovingState': {
-			const a = multiplyMatToVec(this.worldToScreen, toVec4(state.from.center));
-			const b = multiplyMatToVec(this.worldToScreen, toVec4(state.to.center));
+			const a = state.from.center.xyzw.times(this.pxToScreen);
+			const b = state.to.center.xyzw.times(this.pxToScreen);
 			return a[0] > b[0] ? 'MoveLeft' : 'MoveRight';
 		}
 		}
 	}
 
-	private drawShape(node: FieldNode, fillColor: Vec4 = [0.8, 0.8, 0.8, 1], borderColor: Vec4 = [1, 1, 1, 1]) {
+	private drawShape(node: FieldNode, fillColor: Vec4 = vec4(0.8, 0.8, 0.8, 1), borderColor: Vec4 = vec4(1, 1, 1, 1)) {
 		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
 		const isSelectedNode = this.selectedNode() === node;
 		const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
 		if (isSelectedNode && characterState instanceof CharacterCalmState) {
-			coloredShader.setVector4f('borderColor', [0, 0, 0, 1]);
+			coloredShader.setVector4f('borderColor', vec4(0, 0, 0, 1));
 			coloredShader.set1f('borderWidth', 3);
 		} else {
 			coloredShader.setVector4f('borderColor', borderColor);
 			coloredShader.set1f('borderWidth', 2);
 		}
-		if (characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node)) {
-			coloredShader.setVector4f('fillColor', [0.6, 0.6, 0.6, 1.0]);
+		if (
+			node === this.hoveredNode ||
+			characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node)
+		) {
+			coloredShader.setVector4f('fillColor', vec4(0.6, 0.6, 0.6, 1.0));
 		} else {
 			coloredShader.setVector4f('fillColor', fillColor);
 		}
@@ -133,62 +122,55 @@ export class GameFieldScene implements Scene {
 	}
 
 	render(w: number, h: number) {
-		const angle = 0//(new Date().getTime() % 60000) / 60000 * Math.PI * 2;
-		this.worldToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
 
+		this.pxToScreen = ortho(
+			-w / 2,
+			w / 2,
+			-h / 2,
+			h / 2,
+		);
+		this.screenToPx = reverse(this.pxToScreen);
 
-		//this.worldToScreen = scale(this.worldToScreen, [1, 0.8, 1]);
-		//this.worldToScreen = skewX(this.worldToScreen, Math.PI / 6);
-		rotate(this.worldToScreen, angle, [0, 0, 1]);
-		this.screenToWorld = reverse(this.worldToScreen);
 		coloredShader.useProgram();
-		coloredShader.setMatrix('projectionMatrix', this.worldToScreen);
+		coloredShader.setMatrix('projectionMatrix', this.pxToScreen);
 		coloredShader.setMatrix('modelMatrix', identity());
 		this.gameField.getNodes().forEach((node) => {
 			this.drawShape(node);
 		});
 
-
-		this.pxToScreen = ortho(-w / 2, w / 2, -h / 2, h / 2, 0.0, 100.0);
-		this.screenToPx = reverse(this.pxToScreen);
-
-
-		this.gameField.getCharacters()
+		const characters = this.gameField.getCharacters()
 			.map((character) => {
-				let c = toVec4(this.getCharacterPosition(character));
-				const rot = rotate(identity(), angle, [0, 0, 1]);
-				c = multiplyMatToVec(rot, c) as Vec4;
 				return {
 					character: character,
-					point: c
+					point: this.getCharacterPosition(character)
 				};
-			})
-			.sort((a, b) => a.point[1] - b.point[1])
-			.forEach(({character, point}) => {
-				texturedShader.useProgram();
-				texturedShader.setTexture('texture', this.spacedude.texture);
-				texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-				texturedShader.setModel('aVertexPosition', this.rect);
-				texturedShader.setModel('aTexturePosition',
-					this.spacedude.getRect(this.getCharacterAnimation(character))
-				);
-				texturedShader.setMatrix(
-					'modelMatrix',
-					translate(identity(), [point[0], point[1], 0]),
-				);
-				texturedShader.draw();
-				fontRenderer.drawString(
-					character.name + ' ' + hpbar(character.hp, character.maxHp),
-					point[0] + 16, point[1] - 40,
-					FontStyle.BOLD,
-					[1, 1, 1, 1],
-					this.pxToScreen,
-					Align.CENTER,
-					1,
-					ShadowStyle.STROKE,
-					[0, 0, 0, 1],
-				);
 			});
+		characters.sort((a, b) => a.point.y - b.point.y);
+		characters.forEach(({character, point}) => {
+			texturedShader.useProgram();
+			texturedShader.setTexture('texture', this.spacedude.texture);
+			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
+			texturedShader.setModel('aVertexPosition', this.rect);
+			texturedShader.setModel('aTexturePosition',
+				this.spacedude.getRect(this.getCharacterAnimation(character))
+			);
+			texturedShader.setMatrix(
+				'modelMatrix',
+				translate(identity(), point.xyz),
+			);
+			texturedShader.draw();
+			fontRenderer.drawString(
+				character.name + ' ' + hpbar(character.hp, character.maxHp),
+				point.x + 16, point.y - 40,
+				FontStyle.BOLD,
+				vec4(1, 1, 1, 1),
+				this.pxToScreen,
+				Align.CENTER,
+				1,
+				ShadowStyle.STROKE,
+				vec4(0, 0, 0, 1),
+			);
+		});
 
 		if (this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter) instanceof CharacterCalmState) {
 			const node = this.hoveredNode;
@@ -204,7 +186,7 @@ export class GameFieldScene implements Scene {
 			}
 			texturedShader.setMatrix(
 				'modelMatrix',
-				scale(translate(identity(), [this.px, this.py, 0]), [32, 32, 0]))
+				scale(translate(identity(), this.pointer.xyz), vec3(32, 32)))
 			;
 			texturedShader.draw();
 		}
@@ -251,12 +233,10 @@ export class GameFieldScene implements Scene {
 		cursorClicked: boolean
 	) {
 		buttonRenderer.update(dt, pressedKeyMap, this.screenToPx, cursorX, cursorY, cursorPressed);
-		[this.wx, this.wy] = multiplyMatToVec(this.screenToWorld, [cursorX, cursorY, 0, 1]);
-		[this.px, this.py] = multiplyMatToVec(this.screenToPx, [cursorX, cursorY, 0, 1]);
-		[this.x, this.y] = [cursorX, cursorY];
+		const cursor = vec4(cursorX, cursorY);
+		this.pointer = cursor.times(this.screenToPx);
 		this.hoveredNode = this.gameField.getNodes().find((node) =>
-			isPointInConvexShape([this.wx, this.wy], node.points)
-		);
+			isPointInConvexShape(this.pointer.xy, node.points));
 		if (cursorClicked) {
 			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
 			if (!newSelectedCharacter && this.selectedCharacter && this.hoveredNode) {

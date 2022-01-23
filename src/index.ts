@@ -1,15 +1,21 @@
 import {gl, initGlobalGlContext} from './globalContext';
-import {loadSharedResources,} from './sharedResources';
+import {defaultRect, loadSharedResources, texturedShader,} from './sharedResources';
 
 import {Scene} from './scene';
 import {tryDetectError} from './render/utils/gl';
 import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
-import {Pixelized} from './render/pixelized';
 import {error} from './render/utils/errors';
+import {runMatrixTests} from './render/test';
+import {FBO} from './render/textures/fbo';
+import {identity, ortho} from './render/utils/matrices';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
+
+const fw = 320;
+const fh = 180;
+let pxPerPx: number = 1;
 
 enum CursorPressedState {
 	Nothing,
@@ -49,17 +55,22 @@ document.addEventListener('mouseup', () => {
 	}
 });
 
-scene = new Pixelized(new GameFieldScene(new GameField()));
+scene = new GameFieldScene(new GameField());
 
 let prev = new Date().getTime();
+const fbo = new FBO(fw, fh);
 
 const render = () => {
-	const displayWidth = window.innerWidth;
-	const displayHeight = window.innerHeight;
-	if (canvas.width != displayWidth ||
-		canvas.height != displayHeight) {
-		canvas.width = displayWidth;
-		canvas.height = displayHeight;
+
+	const rawWidth = window.innerWidth;
+	const rawHeight = window.innerHeight;
+	pxPerPx = Math.min(Math.floor(rawWidth / fw), Math.floor(rawHeight / fh));
+	const canvasWidth = pxPerPx * fw;
+	const canvasHeight = pxPerPx * fh;
+	if (canvas.width != canvasWidth ||
+		canvas.height != canvasHeight) {
+		canvas.width = canvasWidth;
+		canvas.height = canvasHeight;
 	}
 	let init = Promise.resolve();
 	if (scene !== prevScene) {
@@ -87,19 +98,36 @@ const render = () => {
 		const diff = (now - prev) / 1000;
 		prev = now;
 
-		gl.viewport(0, 0, displayWidth, displayHeight);
 		gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-		scene.render(displayWidth, displayHeight, diff);
+		fbo.bind();
+		scene.render(fw, fh, diff);
+		fbo.unbind();
+
+		pxPerPx = Math.min(Math.floor(canvasWidth / fw), Math.floor(canvasHeight / fh));
+
+		gl.viewport(0, 0, canvasWidth, canvasHeight);
+		texturedShader.useProgram();
+		texturedShader.setTexture('texture', fbo);
+		texturedShader.setMatrix(
+			'projectionMatrix',
+			ortho(0, 1, 1, 0)
+		);
+		texturedShader.setMatrix('modelMatrix', identity());
+		texturedShader.setModel('aTexturePosition', defaultRect);
+		texturedShader.setModel('aVertexPosition', defaultRect);
+		texturedShader.draw();
+
+
 		tryDetectError();
 
 		scene.update(diff, pressedKeysMap,
-			cursorX / displayWidth * 2 - 1,
-			cursorY / displayHeight * 2 - 1,
+			(cursorX + (-rawWidth + canvasWidth) / 2) / canvasWidth * 2 - 1,
+			(cursorY + (-rawHeight + canvasHeight) / 2) / canvasHeight * 2 - 1,
 			isCursorPressed,
 			isCursorClicked,
 			(s: Scene) => {
@@ -112,6 +140,8 @@ const render = () => {
 	});
 };
 
+
+runMatrixTests();
 loadSharedResources().then(() => {
 	render();
 });

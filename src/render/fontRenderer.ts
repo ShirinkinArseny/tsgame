@@ -1,11 +1,12 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
 import {Rect} from './shapes/rect';
-import {identity, Mat4, scale, translate, Vec4} from './utils/matrices';
+import {identity, scale, translate} from './utils/matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
 import {Loadable} from './utils/loadable';
 import {range} from './utils/lists';
+import {Mat4, vec3, vec4, Vec4} from './utils/vector';
 
 export enum FontStyle {
 	NORMAL, BOLD
@@ -117,8 +118,8 @@ export class FontRenderer implements Destroyable, Loadable {
 			'modelMatrix',
 
 			scale(translate(identity(),
-				[x, y, 0.0]
-			), [letter[0], this.lineHeight, 1.0])
+				vec3(x, y, 0.0)
+			), vec3(letter[0], this.lineHeight, 1.0))
 		);
 		this.shader.setModel('aVertexPosition', this.mainRectangle);
 		this.shader.setModel('aTexturePosition', letter[1]);
@@ -152,6 +153,7 @@ export class FontRenderer implements Destroyable, Loadable {
 				xx -= w;
 			}
 		}
+		xx = Math.floor(xx);
 		for (let i = 0; i < string.length; i++) {
 			xx += this.drawSymbol(string[i], xx, y, fontStyle) + kerning;
 		}
@@ -174,42 +176,43 @@ export class FontRenderer implements Destroyable, Loadable {
 	drawString(
 		text: string, x: number, y: number,
 		fontStyle: FontStyle = FontStyle.NORMAL,
-		color: Vec4 = [0, 0, 0, 1],
+		color: Vec4 = vec4(0, 0, 0, 1),
 		projectionMatrix: Mat4,
 		align: Align = Align.LEFT,
 		kerning = 1.0,
 		shadowStyle: ShadowStyle = ShadowStyle.NO,
-		shadowColor: Vec4 = [0, 0, 0, 0.7]
+		shadowColor: Vec4 = vec4(0, 0, 0, 0.7)
 	) {
+		const yy = Math.floor(y);
 		this.initRenderingText(projectionMatrix, shadowStyle === ShadowStyle.NO ? color : shadowColor);
 		if (shadowStyle !== ShadowStyle.NO) {
 			if (shadowStyle === ShadowStyle.DIAGONAL) {
-				this.doDrawString(text, x + 1, y + 1, kerning, fontStyle, align);
+				this.doDrawString(text, x + 1, yy + 1, kerning, fontStyle, align);
 			}
 			if (shadowStyle === ShadowStyle.STROKE) {
 				for (let dx = -1; dx <= 1; dx++) {
 					for (let dy = -1; dy <= 1; dy++) {
 						if (dx !== 0 || dy !== 0) {
-							this.doDrawString(text, x + dx, y + dy, kerning, fontStyle, align);
+							this.doDrawString(text, x + dx, yy + dy, kerning, fontStyle, align);
 						}
 					}
 				}
 			}
 			this.initRenderingTextColor(color);
 		}
-		this.doDrawString(text, x, y, kerning, fontStyle, align);
+		this.doDrawString(text, x, yy, kerning, fontStyle, align);
 	}
 
 	drawText(
 		text: Text,
 		x: number, y: number, w: number,
-		color: Vec4 = [0, 0, 0, 1],
+		color: Vec4 = vec4(0, 0, 0, 1),
 		projectionMatrix: Mat4,
 		kerning = 1.0,
 		lineHeight = 1.0
 	) {
 		let xx = x;
-		let yy = y;
+		let yy = Math.floor(y);
 		const x2 = x + w;
 		this.initRenderingText(projectionMatrix, color);
 		text.forEach(({word, fontStyle}) => {

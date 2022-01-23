@@ -1,21 +1,19 @@
 import {ConvexShape} from './convexShape';
 import {range} from '../utils/lists';
 import {distanceBetweenPointAndLine} from '../utils/geom';
-import {Vec2} from '../utils/matrices';
+import {vec2, Vec2, vec3, Vec3, vecSum} from '../utils/vector';
 
 
 export class BorderedShape extends ConvexShape {
 
-	bounds: [number, number][];
+	bounds: Vec2[];
 
 	constructor(
-		bounds: [number, number][]
+		bounds: Vec2[]
 	) {
-		const center = bounds.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]).map(v => v / bounds.length) as Vec2;
+		const center = bounds.reduce(vecSum, vec2()).map(v => v / bounds.length) as Vec2;
 
-		type Vertex = [number, number, number];
-
-		const triangles: Vertex[] = [];
+		const triangles: Vec3[] = [];
 
 		range(0, bounds.length - 1).forEach(idx => {
 			const i1 = idx;
@@ -23,9 +21,9 @@ export class BorderedShape extends ConvexShape {
 			const b1 = bounds[i1];
 			const b2 = bounds[i2];
 			triangles.push(
-				[...b1, 0],
-				[...b2, 0],
-				[...center, distanceBetweenPointAndLine(center, b1, b2)]
+				vec3(...b1, 0),
+				vec3(...b2, 0),
+				vec3(...center, distanceBetweenPointAndLine(center, b1, b2))
 			);
 		});
 		const indices = range(0, triangles.length - 1);

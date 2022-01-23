@@ -14,8 +14,7 @@ export class Timed<T> {
 		const time = new Date().getTime();
 		const diff = time - this.initialTime;
 		const frame = Math.floor(diff / this.timeout);
-		const idx = frame % this.items.length;
-		return idx;
+		return frame % this.items.length;
 	}
 
 	get() {

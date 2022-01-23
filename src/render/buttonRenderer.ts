@@ -2,9 +2,10 @@ import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {Align, FontStyle, ShadowStyle} from './fontRenderer';
 import {Rect} from './shapes/rect';
-import {identity, Mat4, multiplyMatToVec, scale, translate, Vec4} from './utils/matrices';
+import {identity, scale, translate} from './utils/matrices';
 import {fontRenderer, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
+import {Mat4, vec3, vec4, Vec4} from './utils/vector';
 
 interface ButtonContent {
 	title: string;
@@ -27,7 +28,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 	update(dt: number, pressedKeyMap: Map<string, boolean>,
 		scrToPx: Mat4,
 		cursorX: number, cursorY: number, cursorPressed: boolean) {
-		[this.cx, this.cy] = multiplyMatToVec(scrToPx, [cursorX, cursorY, 0, 1]);
+		[this.cx, this.cy] = vec4(cursorX, cursorY, 0, 1).times(scrToPx);
 		this.clicked = cursorPressed && !this.pressed;
 		this.pressed = cursorPressed;
 	}
@@ -79,7 +80,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setMatrix('projectionMatrix', projMatrix);
 		texturedShader.setMatrix(
 			'modelMatrix',
-			scale(translate(identity(), [x, y, 0]), [6, 1, 1]),
+			scale(translate(identity(), vec3(x, y, 0)), vec3(6, 1, 1)),
 		);
 		texturedShader.setModel('aVertexPosition', this.r);
 		texturedShader.setModel('aTexturePosition', r1);
@@ -88,7 +89,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setMatrix('projectionMatrix', projMatrix);
 		texturedShader.setMatrix(
 			'modelMatrix',
-			scale(translate(identity(), [x + 6, y, 0]), [w, 1, 1]),
+			scale(translate(identity(), vec3(x + 6, y, 0)), vec3(w, 1, 1)),
 		);
 		texturedShader.setModel('aVertexPosition', this.r);
 		texturedShader.setModel('aTexturePosition', r2);
@@ -97,7 +98,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setMatrix('projectionMatrix', projMatrix);
 		texturedShader.setMatrix(
 			'modelMatrix',
-			scale(translate(identity(), [x + 6 + w, y, 0]), [6, 1, 1]),
+			scale(translate(identity(), vec3(x + 6 + w, y, 0)), vec3(6, 1, 1)),
 		);
 		texturedShader.setModel('aVertexPosition', this.r);
 		texturedShader.setModel('aTexturePosition', r3);
