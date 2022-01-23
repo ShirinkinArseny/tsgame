@@ -103,12 +103,12 @@ export function skewX(matrix: Mat4, angleRad: number) {
 }
 
 export function getSkewXmatrix(angle: number) {
-	return [
+	return mat4(
 		1, 0, 0, 0,
 		Math.tan(angle), 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1
-	];
+	);
 }
 
 
