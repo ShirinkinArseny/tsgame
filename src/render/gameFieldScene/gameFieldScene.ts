@@ -24,6 +24,7 @@ import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
 import {buttonRenderer, coloredShader, defaultRect, fontRenderer, texturedShader} from '../../sharedResources';
+import {TextureMap} from '../textureMap';
 
 
 export class GameFieldScene implements Scene {
@@ -41,14 +42,8 @@ export class GameFieldScene implements Scene {
 	screenToWorld: Mat4 = identity();
 	pxToScreen: Mat4 = identity();
 	screenToPx: Mat4 = identity();
-	animtex: ImageTexture = new ImageTexture('spacedude.png');
-	icons: ImageTexture = new ImageTexture('icons.png');
-	animRects: Rect[] = range(0, 11).map(idx => new Rect(
-		1 / 12 * idx,
-		0,
-		1 / 12 * (idx + 1),
-		1
-	));
+	spacedude = new TextureMap('characters/spacedude/spacedude');
+	icons: ImageTexture = new ImageTexture('ui/icons/icons.png');
 	iconRects: Rect[] = range(0, 3).map(idx => new Rect(idx / 4, 0, (idx + 1) / 4, 1 / 4));
 	wx: number = 0;
 	wy: number = 0;
@@ -80,16 +75,15 @@ export class GameFieldScene implements Scene {
 
 	load(): Promise<any> {
 		return Promise.all([
-			this.animtex.load(),
+			this.spacedude.load(),
 			this.icons.load()
 		]);
 	}
 
 	destroy() {
 		Array.of(...this.nodeToShapeMap.values()).forEach(v => v.destroy());
-		this.animtex.destroy();
+		this.spacedude.destroy();
 		this.icons.destroy();
-		this.animRects.forEach(r => r.destroy());
 		this.iconRects.forEach(r => r.destroy());
 	}
 
@@ -110,20 +104,15 @@ export class GameFieldScene implements Scene {
 		}
 	}
 
-	private getCharacterFrame(character: Character): number {
+	private getCharacterAnimation(character: Character): string {
 		const state = this.gameField.getCharacterState(character);
 		switch (state.kind) {
-		case 'CharacterCalmState': {
-			const l = Math.floor(((new Date().getTime() % 499) / 250));
-			return this.animRects.length - 2 + l;
-		}
+		case 'CharacterCalmState':
+			return 'Idle';
 		case 'CharacterMovingState': {
-			const frames = 5;
-			const p = Math.round((frames - 1) * state.phase);
 			const a = multiplyMatToVec(this.worldToScreen, toVec4(state.from.center));
 			const b = multiplyMatToVec(this.worldToScreen, toVec4(state.to.center));
-			const f = p + (a[0] > b[0] ? 1 : 0) * frames;
-			return f;
+			return a[0] > b[0] ? 'MoveLeft' : 'MoveRight';
 		}
 		}
 	}
@@ -182,10 +171,12 @@ export class GameFieldScene implements Scene {
 			.sort((a, b) => a.point[1] - b.point[1])
 			.forEach(({character, point}) => {
 				texturedShader.useProgram();
-				texturedShader.setTexture('texture', this.animtex);
+				texturedShader.setTexture('texture', this.spacedude.texture);
 				texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
 				texturedShader.setModel('aVertexPosition', this.rect);
-				texturedShader.setModel('aTexturePosition', this.animRects[this.getCharacterFrame(character)]);
+				texturedShader.setModel('aTexturePosition',
+					this.spacedude.getRect(this.getCharacterAnimation(character))
+				);
 				texturedShader.setMatrix(
 					'modelMatrix',
 					translate(identity(), [point[0], point[1], 0]),

@@ -55,7 +55,7 @@ export type Text = {
 
 export class FontRenderer implements Destroyable, Loadable {
 
-	private readonly fontImage: ImageTexture = new ImageTexture('font2.png');
+	private readonly fontImage: ImageTexture = new ImageTexture('ui/font/font.png');
 	private readonly mainRectangle: Rect = new Rect(0, 0, 1, 1);
 	private symbolRectangles = new Map<FontStyle, Map<string, [number, Rect]>>();
 	private shader: LoadableShader = new LoadableShader('font');
