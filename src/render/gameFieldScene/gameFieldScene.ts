@@ -34,6 +34,7 @@ export class GameFieldScene implements Scene {
 	pxToScreen: Mat4 = identity();
 	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
+	giraffe = new TextureMap('characters/giraffe/giraffe');
 	icons: ImageTexture = new ImageTexture('ui/icons/icons.png');
 	iconRects: Rect[] = range(0, 3).map(idx => new Rect(idx / 4, 0, (idx + 1) / 4, 1 / 4));
 	pointer: Vec4 = vec4();
@@ -57,6 +58,7 @@ export class GameFieldScene implements Scene {
 	load(): Promise<any> {
 		return Promise.all([
 			this.spacedude.load(),
+			this.giraffe.load(),
 			this.icons.load()
 		]);
 	}
@@ -64,8 +66,19 @@ export class GameFieldScene implements Scene {
 	destroy() {
 		Array.of(...this.nodeToShapeMap.values()).forEach(v => v.destroy());
 		this.spacedude.destroy();
+		this.giraffe.destroy();
 		this.icons.destroy();
 		this.iconRects.forEach(r => r.destroy());
+	}
+
+	private getCharacterSprite(character: Character): TextureMap {
+		if (character.type === 'giraffe') {
+			return this.giraffe;
+		}
+		if (character.type === 'spacedude') {
+			return this.spacedude;
+		}
+		throw new Error('Unknown character type: ' + character.type);
 	}
 
 	private getCharacterPosition(character: Character): Vec2 {
@@ -147,12 +160,13 @@ export class GameFieldScene implements Scene {
 			});
 		characters.sort((a, b) => a.point.y - b.point.y);
 		characters.forEach(({character, point}) => {
+			const sprite = this.getCharacterSprite(character);
 			texturedShader.useProgram();
-			texturedShader.setTexture('texture', this.spacedude.texture);
+			texturedShader.setTexture('texture', sprite.texture);
 			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
 			texturedShader.setModel('aVertexPosition', this.rect);
 			texturedShader.setModel('aTexturePosition',
-				this.spacedude.getRect(this.getCharacterAnimation(character))
+				sprite.getRect(this.getCharacterAnimation(character))
 			);
 			texturedShader.setMatrix(
 				'modelMatrix',

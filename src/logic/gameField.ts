@@ -72,7 +72,7 @@ export class GameField {
 		this.characters.set(
 			new Character(
 				'Mike',
-				'main',
+				'spacedude',
 				3.5,
 				5,
 				400
@@ -82,7 +82,7 @@ export class GameField {
 		this.characters.set(
 			new Character(
 				'Jeff',
-				'main',
+				'spacedude',
 				5,
 				5,
 				400
@@ -92,7 +92,7 @@ export class GameField {
 		this.characters.set(
 			new Character(
 				'<-XxX-[PRO.DeaШoN]-XxX->',
-				'main',
+				'spacedude',
 				5,
 				5,
 				400
@@ -102,7 +102,7 @@ export class GameField {
 		this.characters.set(
 			new Character(
 				'Вася',
-				'main',
+				'giraffe',
 				5,
 				5,
 				400
