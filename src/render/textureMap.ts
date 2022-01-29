@@ -22,6 +22,7 @@ export class TextureMap implements Loadable, Destroyable {
 
 	getRect(tag: string): Rect {
 		const rects = this.getRects(tag);
+		if (rects.length === 1) return rects[0];
 		const totalDurs = this.totalDurations.get(tag) || error('No duration for tag ' + tag);
 		const time = new Date().getTime() % totalDurs[totalDurs.length - 1];
 		const frame = totalDurs.findIndex(d => d > time);

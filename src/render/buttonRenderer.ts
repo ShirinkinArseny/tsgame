@@ -1,15 +1,17 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
-import {Align, FontStyle, ShadowStyle} from './fontRenderer';
+import {HorizontalAlign, FontStyle, ShadowStyle, VerticalAlign, Text} from './fontRenderer';
 import {Rect} from './shapes/rect';
 import {identity, scale, translate} from './utils/matrices';
-import {fontRenderer, texturedShader} from '../sharedResources';
+import {fontRenderer, textboxRenderer, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
-import {Mat4, vec3, vec4, Vec4} from './utils/vector';
+import {Mat4, vec2, Vec2, vec3, vec4, Vec4} from './utils/vector';
+import {PointerEvent} from '../events';
 
 interface ButtonContent {
 	title: string;
 	onClick: () => any;
+	tooltip: Text;
 }
 
 
@@ -20,17 +22,19 @@ export class ButtonRenderer implements Loadable, Destroyable {
 
 	r: Rect = new Rect(0, 0, 1, 16);
 
-	cx: number = 0;
-	cy: number = 0;
-	pressed: boolean = false;
-	clicked: boolean = false;
+	pointerEvent: PointerEvent = new PointerEvent(vec2(), false, false);
+	tooltip: [Text, Vec2] | undefined = undefined;
 
 	update(dt: number, pressedKeyMap: Map<string, boolean>,
 		scrToPx: Mat4,
-		cursorX: number, cursorY: number, cursorPressed: boolean) {
-		[this.cx, this.cy] = vec4(cursorX, cursorY, 0, 1).times(scrToPx);
-		this.clicked = cursorPressed && !this.pressed;
-		this.pressed = cursorPressed;
+		pointerEvent: PointerEvent
+	) {
+		this.pointerEvent = new PointerEvent(
+			vec4(pointerEvent.xy.x, pointerEvent.xy.y, 0, 1).times(scrToPx).xy,
+			pointerEvent.isCursorPressed,
+			pointerEvent.isCursorClicked
+		);
+		this.tooltip = undefined;
 	}
 
 	renderButtonsRow(
@@ -45,6 +49,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 				xx,
 				y,
 				b.title,
+				b.tooltip,
 				projMatrix,
 				b.onClick
 			) + gapBetweenButtons;
@@ -53,7 +58,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 	}
 
 	renderSingleButtons(
-		x: number, y: number, text: string,
+		x: number, y: number, text: string, tooltip: Text | undefined,
 		projMatrix: Mat4,
 		onClick: () => any,
 	) {
@@ -61,16 +66,16 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		const w = fontRenderer.getStringWidth(text, FontStyle.BOLD);
 
 		let hovered = false;
-		if (x <= this.cx && this.cx <= (x + w + 12) && y <= this.cy && this.cy <= (y + 16)) {
+		if (x <= this.pointerEvent.xy.x && this.pointerEvent.xy.x <= (x + w + 12) && y <= this.pointerEvent.xy.y && this.pointerEvent.xy.y <= (y + 16)) {
 			hovered = true;
-			if (this.clicked) {
+			if (this.pointerEvent.isCursorClicked) {
 				onClick();
 			}
 		}
 
 		const [r1, r2, r3] = this.textureMap.getRects(
 			hovered
-				? (this.pressed ? 'Pressed' : 'Hovered')
+				? (this.pointerEvent?.isCursorPressed ? 'Pressed' : 'Hovered')
 				: 'Idle'
 		);
 
@@ -115,14 +120,38 @@ export class ButtonRenderer implements Loadable, Destroyable {
 			FontStyle.BOLD,
 			hovered ? c : b,
 			projMatrix,
-			Align.LEFT,
+			HorizontalAlign.LEFT,
 			1,
 			ShadowStyle.DIAGONAL,
 			a
 		);
 
+		if (hovered && tooltip) {
+			this.tooltip = [
+				tooltip,
+				vec2(
+					x + w + 12,
+					y
+				)
+			];
+		}
+
 		return w + 12;
 
+	}
+
+	renderTooltipsLayer(
+		projMatrix: Mat4,
+	) {
+		const t = this.tooltip;
+		if (t) {
+			textboxRenderer.renderTextBox(
+				t[1].x, t[1].y, 120, t[0],
+				projMatrix,
+				VerticalAlign.BOTTOM,
+				HorizontalAlign.LEFT
+			);
+		}
 	}
 
 	load(): Promise<any> {
