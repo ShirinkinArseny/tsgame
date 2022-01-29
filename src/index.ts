@@ -6,7 +6,6 @@ import {tryDetectError} from './render/utils/gl';
 import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {error} from './render/utils/errors';
-import {runMatrixTests} from './render/test';
 import {FBO} from './render/textures/fbo';
 import {identity, ortho} from './render/utils/matrices';
 import {PointerEvent} from './events';
@@ -56,8 +55,6 @@ document.addEventListener('mouseup', () => {
 		cursorPressed = CursorPressedState.ReleasedBeforeHandle;
 	}
 });
-
-scene = new GameFieldScene(new GameField());
 
 let prev = new Date().getTime();
 const fbo = new FBO(fw, fh);
@@ -149,7 +146,7 @@ const render = () => {
 };
 
 
-runMatrixTests();
 loadSharedResources().then(() => {
+	scene = new GameFieldScene(new GameField());
 	render();
 });

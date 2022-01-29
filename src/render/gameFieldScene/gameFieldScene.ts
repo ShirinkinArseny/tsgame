@@ -12,7 +12,6 @@ import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
 import {
-	buttonRenderer,
 	coloredShader,
 	defaultRect,
 	fontRenderer,
@@ -21,6 +20,7 @@ import {
 import {TextureMap} from '../textureMap';
 import {Mat4, Vec2, vec2, vec3, Vec4, vec4} from '../utils/vector';
 import {PointerEvent} from '../../events';
+import {ButtonRow} from '../buttonRenderer';
 
 export class GameFieldScene implements Scene {
 
@@ -41,6 +41,34 @@ export class GameFieldScene implements Scene {
 	selectedCharacter: Character | undefined;
 	pathToMove: FieldNode[] = [];
 	isNodeInPathToMove = new Map<FieldNode, boolean>();
+
+	buttonsRow = new ButtonRow(
+		[
+			{
+				title: 'Inventory',
+				onClick: () => {
+					console.log('AAA');
+				},
+				tooltip: buildText('Hello world!')
+			},
+			{
+				title: 'Stats',
+				onClick: () => {
+					console.log('BBB');
+				},
+				tooltip: buildText('Lorem ipsum dolor sit amet')
+			},
+			{
+				title: 'Map',
+				onClick: () => {
+					console.log('CCC');
+				},
+				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
+			}
+		],
+		-180,
+		80
+	);
 
 	private selectedNode() {
 		return this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter).node;
@@ -205,35 +233,9 @@ export class GameFieldScene implements Scene {
 			texturedShader.draw();
 		}
 
-		buttonRenderer.renderButtonsRow(
-			-120,
-			h / 2 - 23,
-			this.pxToScreen,
-			[
-				{
-					title: 'Inventory',
-					onClick: () => {
-						console.log('AAA');
-					},
-					tooltip: buildText('Hello world!')
-				},
-				{
-					title: 'Stats',
-					onClick: () => {
-						console.log('BBB');
-					},
-					tooltip: buildText('Lorem ipsum dolor sit amet')
-				},
-				{
-					title: 'Map',
-					onClick: () => {
-						console.log('CCC');
-					},
-					tooltip: buildText('В лесу родилась ёлочка, в лесу она росла, зимой и летом стройная зелёная была.')
-				}
-			]
+		this.buttonsRow.render(
+			this.pxToScreen
 		);
-		buttonRenderer.renderTooltipsLayer(this.pxToScreen);
 
 
 	}
@@ -251,7 +253,7 @@ export class GameFieldScene implements Scene {
 		pressedKeyMap: Map<string, boolean>,
 		pointerEvent: PointerEvent
 	) {
-		buttonRenderer.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
+		this.buttonsRow.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
 		const cursor = pointerEvent.xy.xyzw;
 		this.pointer = cursor.times(this.screenToPx);
 		this.hoveredNode = this.gameField.getNodes().find((node) =>

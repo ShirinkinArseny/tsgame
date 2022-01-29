@@ -53,18 +53,44 @@ const alphabet = [
 
 const spaceWidth = 4;
 
-export type Text = {
+export type Word = {
 	word: string,
 	fontStyle: FontStyle
-}[];
+};
 
-export function buildText(text: string): Text {
-	return text
-		.split(' ')
-		.map(w => ({
-			word: w,
-			fontStyle: FontStyle.NORMAL
-		}));
+export type NewLine = undefined;
+
+export type TextElement = Word | NewLine;
+
+export type Text = TextElement[];
+
+export function buildText(
+	text: string,
+	fontStyle: FontStyle = FontStyle.NORMAL
+): Text {
+	const textElements: TextElement[] = [];
+	const lastWord: string[] = [];
+	const pushLastWord = () => {
+		if (lastWord.length > 0) {
+			textElements.push({
+				word: lastWord.join(''),
+				fontStyle: fontStyle
+			});
+			lastWord.splice(0, lastWord.length);
+		}
+	};
+	text.split('').forEach(letter => {
+		if (letter === ' ') {
+			pushLastWord();
+		} else if (letter === '\n') {
+			pushLastWord();
+			textElements.push(undefined);
+		} else {
+			lastWord.push(letter);
+		}
+	});
+	pushLastWord();
+	return textElements;
 }
 
 export class FontRenderer implements Destroyable, Loadable {
@@ -235,14 +261,16 @@ export class FontRenderer implements Destroyable, Loadable {
 		let xx = 0;
 		let yy = 0;
 		const wordsPositions: Vec3[] = [];
-		text.forEach(({word, fontStyle}) => {
-			const w = this.getStringWidth(word, fontStyle);
-			if (xx + w * kerning >= width) {
+		text.forEach(textElemement => {
+			const w = textElemement && this.getStringWidth(textElemement.word, textElemement.fontStyle);
+			if (!w || xx + w * kerning >= width) {
 				xx = 0;
 				yy += lineHeight;
 			}
 			wordsPositions.push(vec3(xx, yy, w));
-			xx += (w + spaceWidth) * kerning;
+			if (w) {
+				xx += (w + spaceWidth) * kerning;
+			}
 		});
 		return wordsPositions;
 	}
@@ -259,9 +287,11 @@ export class FontRenderer implements Destroyable, Loadable {
 		const yy = Math.floor(y);
 		const textPositions = this.getTextPositions(text, w, lineHeight, kerning);
 		this.initRenderingText(projectionMatrix, color);
-		text.forEach(({word, fontStyle}, idx) => {
-			const pos = textPositions[idx];
-			this.doDrawString(word, pos.x + xx, pos.y + yy, kerning, fontStyle, HorizontalAlign.LEFT);
+		text.forEach((textElement, idx) => {
+			if (textElement) {
+				const pos = textPositions[idx];
+				this.doDrawString(textElement.word, pos.x + xx, pos.y + yy, kerning, textElement.fontStyle, HorizontalAlign.LEFT);
+			}
 		});
 	}
 
