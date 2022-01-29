@@ -75,7 +75,8 @@ export class GameField {
 				'spacedude',
 				3.5,
 				5,
-				400
+				400,
+				12,
 			),
 			this.graph[0]
 		);
@@ -85,7 +86,8 @@ export class GameField {
 				'spacedude',
 				5,
 				5,
-				400
+				400,
+				11,
 			),
 			this.graph[1]
 		);
@@ -95,7 +97,8 @@ export class GameField {
 				'spacedude',
 				5,
 				5,
-				400
+				400,
+				0
 			),
 			this.graph[2]
 		);
@@ -105,7 +108,8 @@ export class GameField {
 				'giraffe',
 				5,
 				5,
-				400
+				400,
+				-4
 			),
 			this.graph[3]
 		);
