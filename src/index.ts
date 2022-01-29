@@ -6,15 +6,16 @@ import {tryDetectError} from './render/utils/gl';
 import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {error} from './render/utils/errors';
-import {runMatrixTests} from './render/test';
 import {FBO} from './render/textures/fbo';
 import {identity, ortho} from './render/utils/matrices';
+import {PointerEvent} from './events';
+import {vec2} from './render/utils/vector';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
 
-const fw = 320;
-const fh = 180;
+const fw = 384;
+const fh = Math.floor(fw * 9 / 16);
 let pxPerPx: number = 1;
 
 enum CursorPressedState {
@@ -54,8 +55,6 @@ document.addEventListener('mouseup', () => {
 		cursorPressed = CursorPressedState.ReleasedBeforeHandle;
 	}
 });
-
-scene = new GameFieldScene(new GameField());
 
 let prev = new Date().getTime();
 const fbo = new FBO(fw, fh);
@@ -125,11 +124,17 @@ const render = () => {
 
 		tryDetectError();
 
-		scene.update(diff, pressedKeysMap,
-			(cursorX + (-rawWidth + canvasWidth) / 2) / canvasWidth * 2 - 1,
-			(cursorY + (-rawHeight + canvasHeight) / 2) / canvasHeight * 2 - 1,
+		const pointerEvent = new PointerEvent(
+			vec2(
+				(cursorX + (-rawWidth + canvasWidth) / 2) / canvasWidth * 2 - 1,
+				(cursorY + (-rawHeight + canvasHeight) / 2) / canvasHeight * 2 - 1,
+			),
 			isCursorPressed,
 			isCursorClicked,
+		);
+
+		scene.update(diff, pressedKeysMap,
+			pointerEvent,
 			(s: Scene) => {
 				scene = s;
 			});
@@ -141,7 +146,7 @@ const render = () => {
 };
 
 
-runMatrixTests();
 loadSharedResources().then(() => {
+	scene = new GameFieldScene(new GameField());
 	render();
 });

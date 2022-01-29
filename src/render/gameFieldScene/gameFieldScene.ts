@@ -2,25 +2,25 @@ import {Scene} from '../../scene';
 import {CharacterCalmState, GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
-import {
-	identity,
-	ortho,
-	reverse,
-	scale,
-	translate,
-} from '../utils/matrices';
+import {identity, ortho, reverse, scale, translate,} from '../utils/matrices';
 import {Rect} from '../shapes/rect';
 import {isPointInConvexShape} from '../utils/geom';
 import {ImageTexture} from '../textures/imageTexture';
 import {range} from '../utils/lists';
-import {Align, FontStyle, ShadowStyle} from '../fontRenderer';
+import {buildText, FontStyle, HorizontalAlign, ShadowStyle} from '../fontRenderer';
 import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
-import {buttonRenderer, coloredShader, defaultRect, fontRenderer, texturedShader} from '../../sharedResources';
+import {
+	coloredShader,
+	defaultRect,
+	fontRenderer,
+	texturedShader
+} from '../../sharedResources';
 import {TextureMap} from '../textureMap';
 import {Mat4, Vec2, vec2, vec3, Vec4, vec4} from '../utils/vector';
-
+import {PointerEvent} from '../../events';
+import {ButtonRow} from '../buttonRenderer';
 
 export class GameFieldScene implements Scene {
 
@@ -41,6 +41,34 @@ export class GameFieldScene implements Scene {
 	selectedCharacter: Character | undefined;
 	pathToMove: FieldNode[] = [];
 	isNodeInPathToMove = new Map<FieldNode, boolean>();
+
+	buttonsRow = new ButtonRow(
+		[
+			{
+				title: 'Inventory',
+				onClick: () => {
+					console.log('AAA');
+				},
+				tooltip: buildText('Hello world!')
+			},
+			{
+				title: 'Stats',
+				onClick: () => {
+					console.log('BBB');
+				},
+				tooltip: buildText('Lorem ipsum dolor sit amet')
+			},
+			{
+				title: 'Map',
+				onClick: () => {
+					console.log('CCC');
+				},
+				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
+			}
+		],
+		-180,
+		80
+	);
 
 	private selectedNode() {
 		return this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter).node;
@@ -179,7 +207,7 @@ export class GameFieldScene implements Scene {
 				FontStyle.BOLD,
 				vec4(1, 1, 1, 1),
 				this.pxToScreen,
-				Align.CENTER,
+				HorizontalAlign.CENTER,
 				1,
 				ShadowStyle.STROKE,
 				vec4(0, 0, 0, 1),
@@ -205,30 +233,8 @@ export class GameFieldScene implements Scene {
 			texturedShader.draw();
 		}
 
-		buttonRenderer.renderButtonsRow(
-			-120,
-			h / 2 - 23,
-			this.pxToScreen,
-			[
-				{
-					title: 'Inventory',
-					onClick: () => {
-						console.log('AAA');
-					}
-				},
-				{
-					title: 'Stats',
-					onClick: () => {
-						console.log('BBB');
-					}
-				},
-				{
-					title: 'Map',
-					onClick: () => {
-						console.log('CCC');
-					}
-				}
-			]
+		this.buttonsRow.render(
+			this.pxToScreen
 		);
 
 
@@ -242,16 +248,17 @@ export class GameFieldScene implements Scene {
 		this.pathToMove.forEach((n) => this.isNodeInPathToMove.set(n, true));
 	}
 
-	update(dt: number, pressedKeyMap: Map<string, boolean>, cursorX: number, cursorY: number,
-		cursorPressed: boolean,
-		cursorClicked: boolean
+	update(
+		dt: number,
+		pressedKeyMap: Map<string, boolean>,
+		pointerEvent: PointerEvent
 	) {
-		buttonRenderer.update(dt, pressedKeyMap, this.screenToPx, cursorX, cursorY, cursorPressed);
-		const cursor = vec4(cursorX, cursorY);
+		this.buttonsRow.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
+		const cursor = pointerEvent.xy.xyzw;
 		this.pointer = cursor.times(this.screenToPx);
 		this.hoveredNode = this.gameField.getNodes().find((node) =>
 			isPointInConvexShape(this.pointer.xy, node.points));
-		if (cursorClicked) {
+		if (pointerEvent.isCursorClicked) {
 			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
 			if (!newSelectedCharacter && this.selectedCharacter && this.hoveredNode) {
 				this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);

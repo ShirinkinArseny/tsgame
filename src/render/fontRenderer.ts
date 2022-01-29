@@ -6,14 +6,18 @@ import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
 import {Loadable} from './utils/loadable';
 import {range} from './utils/lists';
-import {Mat4, vec3, vec4, Vec4} from './utils/vector';
+import {Mat4, Vec3, vec3, vec4, Vec4} from './utils/vector';
 
 export enum FontStyle {
 	NORMAL, BOLD
 }
 
-export enum Align {
+export enum HorizontalAlign {
 	LEFT, RIGHT, CENTER
+}
+
+export enum VerticalAlign {
+	TOP, BOTTOM
 }
 
 export enum ShadowStyle {
@@ -49,10 +53,45 @@ const alphabet = [
 
 const spaceWidth = 4;
 
-export type Text = {
+export type Word = {
 	word: string,
 	fontStyle: FontStyle
-}[];
+};
+
+export type NewLine = undefined;
+
+export type TextElement = Word | NewLine;
+
+export type Text = TextElement[];
+
+export function buildText(
+	text: string,
+	fontStyle: FontStyle = FontStyle.NORMAL
+): Text {
+	const textElements: TextElement[] = [];
+	const lastWord: string[] = [];
+	const pushLastWord = () => {
+		if (lastWord.length > 0) {
+			textElements.push({
+				word: lastWord.join(''),
+				fontStyle: fontStyle
+			});
+			lastWord.splice(0, lastWord.length);
+		}
+	};
+	text.split('').forEach(letter => {
+		if (letter === ' ') {
+			pushLastWord();
+		} else if (letter === '\n') {
+			pushLastWord();
+			textElements.push(undefined);
+		} else {
+			lastWord.push(letter);
+		}
+	});
+	pushLastWord();
+	return textElements;
+}
 
 export class FontRenderer implements Destroyable, Loadable {
 
@@ -60,7 +99,7 @@ export class FontRenderer implements Destroyable, Loadable {
 	private readonly mainRectangle: Rect = new Rect(0, 0, 1, 1);
 	private symbolRectangles = new Map<FontStyle, Map<string, [number, Rect]>>();
 	private shader: LoadableShader = new LoadableShader('font');
-	private lineHeight: number = 0;
+	lineHeight: number = 0;
 
 	load() {
 		return Promise.all([
@@ -109,10 +148,20 @@ export class FontRenderer implements Destroyable, Loadable {
 		this.shader.destroy();
 	}
 
+	private getSymbol(symbol: string, style: FontStyle) {
+		let r = this.symbolRectangles.get(style)?.get(symbol);
+		if (r) return r;
+		for (const v of this.symbolRectangles.values()) {
+			r = v.get(symbol);
+			if (r) return r;
+		}
+		return undefined;
+	}
+
 	private drawSymbol(
 		symbol: string, x: number, y: number, fontStyle: FontStyle
 	): number {
-		const letter = this.symbolRectangles.get(fontStyle)?.get(symbol);
+		const letter = this.getSymbol(symbol, fontStyle);
 		if (!letter) return spaceWidth;
 		this.shader.setMatrix(
 			'modelMatrix',
@@ -142,14 +191,14 @@ export class FontRenderer implements Destroyable, Loadable {
 	private doDrawString(
 		string: string, x: number, y: number,
 		kerning: number, fontStyle: FontStyle,
-		align: Align
+		align: HorizontalAlign
 	) {
 		let xx = x;
-		if (align !== Align.LEFT) {
+		if (align !== HorizontalAlign.LEFT) {
 			const w = this.getStringWidth(string, fontStyle, kerning);
-			if (align === Align.CENTER) {
+			if (align === HorizontalAlign.CENTER) {
 				xx -= w / 2;
-			} else if (align === Align.RIGHT) {
+			} else if (align === HorizontalAlign.RIGHT) {
 				xx -= w;
 			}
 		}
@@ -178,7 +227,7 @@ export class FontRenderer implements Destroyable, Loadable {
 		fontStyle: FontStyle = FontStyle.NORMAL,
 		color: Vec4 = vec4(0, 0, 0, 1),
 		projectionMatrix: Mat4,
-		align: Align = Align.LEFT,
+		align: HorizontalAlign = HorizontalAlign.LEFT,
 		kerning = 1.0,
 		shadowStyle: ShadowStyle = ShadowStyle.NO,
 		shadowColor: Vec4 = vec4(0, 0, 0, 0.7)
@@ -203,28 +252,47 @@ export class FontRenderer implements Destroyable, Loadable {
 		this.doDrawString(text, x, yy, kerning, fontStyle, align);
 	}
 
+	getTextPositions(
+		text: Text,
+		width: number,
+		lineHeight = this.lineHeight,
+		kerning = 1.0
+	): Vec3[] {
+		let xx = 0;
+		let yy = 0;
+		const wordsPositions: Vec3[] = [];
+		text.forEach(textElemement => {
+			const w = textElemement && this.getStringWidth(textElemement.word, textElemement.fontStyle);
+			if (!w || xx + w * kerning >= width) {
+				xx = 0;
+				yy += lineHeight;
+			}
+			wordsPositions.push(vec3(xx, yy, w));
+			if (w) {
+				xx += (w + spaceWidth) * kerning;
+			}
+		});
+		return wordsPositions;
+	}
+
 	drawText(
 		text: Text,
 		x: number, y: number, w: number,
 		color: Vec4 = vec4(0, 0, 0, 1),
 		projectionMatrix: Mat4,
-		kerning = 1.0,
-		lineHeight = 1.0
+		lineHeight = this.lineHeight,
+		kerning = 1.0
 	) {
-		let xx = x;
-		let yy = Math.floor(y);
-		const x2 = x + w;
+		const xx = Math.floor(x);
+		const yy = Math.floor(y);
+		const textPositions = this.getTextPositions(text, w, lineHeight, kerning);
 		this.initRenderingText(projectionMatrix, color);
-		text.forEach(({word, fontStyle}) => {
-			const w = this.getStringWidth(word, fontStyle);
-			if (xx + w * kerning >= x + x2) {
-				xx = x;
-				yy += lineHeight;
+		text.forEach((textElement, idx) => {
+			if (textElement) {
+				const pos = textPositions[idx];
+				this.doDrawString(textElement.word, pos.x + xx, pos.y + yy, kerning, textElement.fontStyle, HorizontalAlign.LEFT);
 			}
-			this.doDrawString(word, xx, yy, kerning, fontStyle, Align.LEFT);
-			xx += (w + spaceWidth) * kerning;
 		});
-
 	}
 
 }

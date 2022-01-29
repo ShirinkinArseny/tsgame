@@ -1,5 +1,6 @@
 import {Destroyable} from './render/utils/destroyable';
 import {Loadable} from './render/utils/loadable';
+import {PointerEvent} from './events';
 
 
 export interface Scene extends Destroyable, Loadable {
@@ -10,10 +11,7 @@ export interface Scene extends Destroyable, Loadable {
 
 	update(dt: number,
 		pressedKeyMap: Map<string, boolean>,
-		cursorX: number,
-		cursorY: number,
-		cursorPressed: boolean,
-		cursorClicked: boolean,
+		pointerEvent: PointerEvent,
 		changeScene: (scene: Scene) => void): void;
 
 	render(w: number, h: number, dt: number): void;
