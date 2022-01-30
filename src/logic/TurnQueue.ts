@@ -35,6 +35,8 @@ export class TurnQueue {
 
 		this.currentCharacter = this.currentQueue.pop() as Character;
 		console.log(`start turn for ${this.currentCharacter.name}`);
+		console.log(this.getCurrentQueue().map(ch => ch.name));
+
 
 		return this.currentCharacter;
 	}
@@ -44,7 +46,12 @@ export class TurnQueue {
 	}
 
 	getCurrentQueue() {
-		return this.currentQueue;
+		const currentQueueToShow = this.currentQueue.slice();
+		if (this.currentCharacter) {
+			currentQueueToShow.push(this.currentCharacter);
+		}
+
+		return currentQueueToShow.reverse();
 	}
 
 	removeCharacter(character: Character) {
