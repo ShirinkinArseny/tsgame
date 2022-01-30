@@ -21,6 +21,16 @@ import {TextureMap} from '../textureMap';
 import {Mat4, Vec2, vec2, Vec4, vec4} from '../utils/vector';
 import {PointerEvent} from '../../events';
 import {ButtonRow} from '../buttonRenderer';
+import {fh, fw} from '../../globalContext';
+
+
+const screenRect = {
+	bottom: fh / 2,
+	top: -fh / 2,
+	left: -fw / 2,
+	right: fw / 2,
+};
+
 
 export class GameFieldScene implements Scene {
 
@@ -35,6 +45,7 @@ export class GameFieldScene implements Scene {
 	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	giraffe = new TextureMap('characters/giraffe/giraffe');
+	portraits = new TextureMap('characters/portraits/portraits');
 	icons: ImageTexture = new ImageTexture('ui/icons/icons.png');
 	iconRects: Rect[] = range(0, 3).map(idx => new Rect(idx / 4, 0, (idx + 1) / 4, 1 / 4));
 	pointer: Vec4 = vec4();
@@ -88,7 +99,8 @@ export class GameFieldScene implements Scene {
 		return Promise.all([
 			this.spacedude.load(),
 			this.giraffe.load(),
-			this.icons.load()
+			this.icons.load(),
+			this.portraits.load(),
 		]);
 	}
 
@@ -210,6 +222,8 @@ export class GameFieldScene implements Scene {
 			);
 		});
 
+		this.drawQueue();
+
 		if (this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter) instanceof CharacterCalmState) {
 			const node = this.hoveredNode;
 			const char = this.gameField.getCharacterAt(node);
@@ -227,6 +241,24 @@ export class GameFieldScene implements Scene {
 		this.buttonsRow.render();
 
 
+	}
+
+	private drawQueue() {
+		const textureSize = 16;
+		const sprite = this.portraits;
+		const queue = this.gameField.turnQueue.getCurrentQueue();
+		const startPoint = -(queue.length * textureSize) / 2;
+		queue.forEach((ch, i) => {
+
+			texturedShader.useProgram();
+			texturedShader.setTexture('texture', sprite.texture);
+			texturedShader.setModel('vertexPosition', defaultRect);
+			texturedShader.setModel('texturePosition',
+				sprite.getRect(ch.type)
+			);
+			texturedShader.draw(vec2(startPoint + i * textureSize, screenRect.top), vec2(textureSize, textureSize));
+
+		});
 	}
 
 	private updatePath() {
