@@ -1,4 +1,4 @@
-export class Character {
+export class Action {
 
 	constructor(
 		public readonly name: string,
@@ -6,7 +6,6 @@ export class Character {
 		public readonly hp: number,
 		public readonly maxHp: number,
 		public readonly moveTime: number,
-		public readonly initiative: number = 0
 	) {
 	}
 
