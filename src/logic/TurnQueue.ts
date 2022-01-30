@@ -6,7 +6,14 @@ export class TurnQueue {
 
 	private readonly characters: Character[];
 	private currentQueue: Character[] = [];
-	private currentCharacter?: Character;
+	currentCharacter?: Character;
+
+	getCurrentCharacter(): Character {
+		if (!this.currentCharacter) {
+			this.startTurn();
+		}
+		return this.currentCharacter as Character;
+	}
 
 	constructor(characters: Character[]) {
 		this.characters = characters.slice().sort((a, b) => a.initiative - b.initiative);
@@ -22,7 +29,7 @@ export class TurnQueue {
 	}
 
 	startTurn(): Character {
-		if (this.currentQueue.length > 0) {
+		if (this.currentQueue.length <= 0) {
 			this.currentQueue = this.characters.slice();
 		}
 

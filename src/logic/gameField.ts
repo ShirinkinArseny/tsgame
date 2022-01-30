@@ -163,6 +163,11 @@ export class GameField {
 	}
 
 	moveCharacter(character: Character, to: FieldNode) {
+
+		if (this.turnQueue.getCurrentCharacter() !== character) {
+			console.log('not his turn yet');
+			return false;
+		}
 		const from = this.characters.getB(character);
 		if (!from) return;
 		const path = this.findPath(from, to);
