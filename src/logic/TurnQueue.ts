@@ -6,7 +6,14 @@ export class TurnQueue {
 
 	private readonly characters: Character[];
 	private currentQueue: Character[] = [];
-	private currentCharacter?: Character;
+	currentCharacter?: Character;
+
+	getCurrentCharacter(): Character {
+		if (!this.currentCharacter) {
+			this.startNextTurn();
+		}
+		return this.currentCharacter as Character;
+	}
 
 	constructor(characters: Character[]) {
 		this.characters = characters.slice().sort((a, b) => a.initiative - b.initiative);
@@ -21,13 +28,15 @@ export class TurnQueue {
 		return this.characters;
 	}
 
-	startTurn(): Character {
-		if (this.currentQueue.length > 0) {
+	startNextTurn(): Character {
+		if (this.currentQueue.length <= 0) {
 			this.currentQueue = this.characters.slice();
 		}
 
 		this.currentCharacter = this.currentQueue.pop() as Character;
 		console.log(`start turn for ${this.currentCharacter.name}`);
+		console.log(this.getCurrentQueue().map(ch => ch.name));
+
 
 		return this.currentCharacter;
 	}
@@ -37,13 +46,18 @@ export class TurnQueue {
 	}
 
 	getCurrentQueue() {
-		return this.currentQueue;
+		const currentQueueToShow = this.currentQueue.slice();
+		if (this.currentCharacter) {
+			currentQueueToShow.push(this.currentCharacter);
+		}
+
+		return currentQueueToShow.reverse();
 	}
 
 	removeCharacter(character: Character) {
 
 		if (character === this.currentCharacter) {
-			this.startTurn();
+			this.startNextTurn();
 		}
 		const index1 = this.characters.indexOf(character);
 		if (index1 > -1) {

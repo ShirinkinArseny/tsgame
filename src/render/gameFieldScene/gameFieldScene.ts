@@ -48,6 +48,7 @@ export class GameFieldScene implements Scene {
 				title: 'Inventory',
 				onClick: () => {
 					console.log('AAA');
+					this.gameField.turnQueue.startNextTurn();
 				},
 				tooltip: buildText('Hello world!')
 			},
@@ -186,6 +187,7 @@ export class GameFieldScene implements Scene {
 					point: this.getCharacterPosition(character)
 				};
 			});
+		1;
 		characters.sort((a, b) => a.point.y - b.point.y);
 		characters.forEach(({character, point}) => {
 			const sprite = this.getCharacterSprite(character);
