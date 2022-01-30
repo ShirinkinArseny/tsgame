@@ -4,14 +4,16 @@ import {Loadable} from '../utils/loadable';
 import {Texture} from '../textures/texture';
 import {ConvexShape} from '../shapes/convexShape';
 import {error} from '../utils/errors';
-import {gl} from '../../globalContext';
-import {Mat4, Vec3, Vec4} from '../utils/vector';
+import {gl, screenSize} from '../../globalContext';
+import {Mat4, vec2, Vec2, Vec3, Vec4} from '../utils/vector';
 
 let bindedShader: Shader | undefined;
 let bindedTextures: { [k: string]: number } = {};
 let bindedTexturesCounter = 0;
 
 let bindedModelIndicesCount: number = 0;
+
+const identityScaleVec = vec2(1, 1);
 
 function getTextureLayer(index: number): GLenum {
 	if (index >= 32) {
@@ -95,7 +97,7 @@ export class Shader implements Destroyable, Loadable {
 		return this.attributesCache.get(name);
 	}
 
-	useProgram() {
+	useProgram(autoSetScreenSize = true) {
 		if (!this.loaded) {
 			throw new Error('Trying to use shader while it is not loaded yet');
 		}
@@ -103,6 +105,9 @@ export class Shader implements Destroyable, Loadable {
 		bindedShader = this;
 		bindedTextures = {};
 		bindedTexturesCounter = -1;
+		if (autoSetScreenSize) {
+			this.setVec2('screenSize', screenSize);
+		}
 	}
 
 	private requireBinded() {
@@ -132,7 +137,7 @@ export class Shader implements Destroyable, Loadable {
 		value.bindModel(this.attributesCache.get(name));
 	}
 
-	setMatrix(
+	setMat4(
 		name: string,
 		value: Mat4,
 	) {
@@ -144,27 +149,34 @@ export class Shader implements Destroyable, Loadable {
 		);
 	}
 
-	setVector4f(name: string, value: Vec4) {
+	setVec4(name: string, value: Vec4) {
 		this.requireBinded();
 		gl.uniform4fv(this.uniformsCache.get(name), value);
 	}
 
-	setVector3f(name: string, value: Vec3) {
+	setVec3(name: string, value: Vec3) {
 		this.requireBinded();
 		gl.uniform3fv(this.uniformsCache.get(name), value);
 	}
 
-	set1i(name: string, value: number) {
+	setVec2(name: string, value: Vec2) {
 		this.requireBinded();
-		gl.uniform1i(this.uniformsCache.get(name), value);
+		gl.uniform2fv(this.uniformsCache.get(name), value);
 	}
 
-	set1f(name: string, value: number) {
+	setNumber(name: string, value: number) {
 		this.requireBinded();
 		gl.uniform1f(this.uniformsCache.get(name), value);
 	}
 
-	draw() {
+	draw(
+		xy: Vec2,
+		wh: Vec2 = identityScaleVec
+	) {
+
+		this.setVec2('modelTranslate', xy);
+		this.setVec2('modelScale', wh);
+
 		gl.drawElements(
 			gl.TRIANGLES,
 			bindedModelIndicesCount,

@@ -1,11 +1,19 @@
-attribute vec4 aVertexPosition;
+attribute vec4 vertexPosition;
 
-uniform mat4 projectionMatrix;
-uniform mat4 modelMatrix;
+uniform vec2 screenSize;
+uniform vec2 modelTranslate;
+uniform vec2 modelScale;
 
 varying float borderness;
 
 void main() {
-    gl_Position = (projectionMatrix * modelMatrix) * vec4(aVertexPosition.xy, 0, 1);
-    borderness = aVertexPosition.z;
+    gl_Position = vec4(
+        (
+        vertexPosition.xy *
+            modelScale +
+            modelTranslate
+        ) * 2.0 / screenSize,
+        0, 1
+    );
+    borderness = vertexPosition.z;
 }

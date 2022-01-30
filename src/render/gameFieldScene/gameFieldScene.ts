@@ -2,7 +2,7 @@ import {Scene} from '../../scene';
 import {CharacterCalmState, GameField} from '../../logic/gameField';
 import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
-import {identity, ortho, reverse, scale, translate,} from '../utils/matrices';
+import {identity, ortho, reverse} from '../utils/matrices';
 import {Rect} from '../shapes/rect';
 import {isPointInConvexShape} from '../utils/geom';
 import {ImageTexture} from '../textures/imageTexture';
@@ -18,7 +18,7 @@ import {
 	texturedShader
 } from '../../sharedResources';
 import {TextureMap} from '../textureMap';
-import {Mat4, Vec2, vec2, vec3, Vec4, vec4} from '../utils/vector';
+import {Mat4, Vec2, vec2, Vec4, vec4} from '../utils/vector';
 import {PointerEvent} from '../../events';
 import {ButtonRow} from '../buttonRenderer';
 
@@ -145,22 +145,22 @@ export class GameFieldScene implements Scene {
 		const isSelectedNode = this.selectedNode() === node;
 		const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
 		if (isSelectedNode && characterState instanceof CharacterCalmState) {
-			coloredShader.setVector4f('borderColor', vec4(0, 0, 0, 1));
-			coloredShader.set1f('borderWidth', 3);
+			coloredShader.setVec4('borderColor', vec4(0, 0, 0, 1));
+			coloredShader.setNumber('borderWidth', 3);
 		} else {
-			coloredShader.setVector4f('borderColor', borderColor);
-			coloredShader.set1f('borderWidth', 2);
+			coloredShader.setVec4('borderColor', borderColor);
+			coloredShader.setNumber('borderWidth', 2);
 		}
 		if (
 			node === this.hoveredNode ||
 			characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node)
 		) {
-			coloredShader.setVector4f('fillColor', vec4(0.6, 0.6, 0.6, 1.0));
+			coloredShader.setVec4('fillColor', vec4(0.6, 0.6, 0.6, 1.0));
 		} else {
-			coloredShader.setVector4f('fillColor', fillColor);
+			coloredShader.setVec4('fillColor', fillColor);
 		}
-		coloredShader.setModel('aVertexPosition', shape);
-		coloredShader.draw();
+		coloredShader.setModel('vertexPosition', shape);
+		coloredShader.draw(vec2(0, 0), vec2(1, 1));
 	}
 
 	render(w: number, h: number) {
@@ -174,8 +174,8 @@ export class GameFieldScene implements Scene {
 		this.screenToPx = reverse(this.pxToScreen);
 
 		coloredShader.useProgram();
-		coloredShader.setMatrix('projectionMatrix', this.pxToScreen);
-		coloredShader.setMatrix('modelMatrix', identity());
+		coloredShader.setVec2('modelTranslate', vec2(0, 0));
+		coloredShader.setVec2('modelScale', vec2(1, 1));
 		this.gameField.getNodes().forEach((node) => {
 			this.drawShape(node);
 		});
@@ -193,22 +193,16 @@ export class GameFieldScene implements Scene {
 			const sprite = this.getCharacterSprite(character);
 			texturedShader.useProgram();
 			texturedShader.setTexture('texture', sprite.texture);
-			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-			texturedShader.setModel('aVertexPosition', this.rect);
-			texturedShader.setModel('aTexturePosition',
+			texturedShader.setModel('vertexPosition', this.rect);
+			texturedShader.setModel('texturePosition',
 				sprite.getRect(this.getCharacterAnimation(character))
 			);
-			texturedShader.setMatrix(
-				'modelMatrix',
-				translate(identity(), point.xyz),
-			);
-			texturedShader.draw();
+			texturedShader.draw(point.xy, vec2(1, 1));
 			fontRenderer.drawString(
 				character.name + ' ' + hpbar(character.hp, character.maxHp),
 				point.x + 16, point.y - 40,
 				FontStyle.BOLD,
 				vec4(1, 1, 1, 1),
-				this.pxToScreen,
 				HorizontalAlign.CENTER,
 				1,
 				ShadowStyle.STROKE,
@@ -221,23 +215,16 @@ export class GameFieldScene implements Scene {
 			const char = this.gameField.getCharacterAt(node);
 			texturedShader.useProgram();
 			texturedShader.setTexture('texture', this.icons);
-			texturedShader.setMatrix('projectionMatrix', this.pxToScreen);
-			texturedShader.setModel('aVertexPosition', defaultRect);
+			texturedShader.setModel('vertexPosition', defaultRect);
 			if (char) {
-				texturedShader.setModel('aTexturePosition', this.iconRects[1]);
+				texturedShader.setModel('texturePosition', this.iconRects[1]);
 			} else {
-				texturedShader.setModel('aTexturePosition', this.iconRects[0]);
+				texturedShader.setModel('texturePosition', this.iconRects[0]);
 			}
-			texturedShader.setMatrix(
-				'modelMatrix',
-				scale(translate(identity(), this.pointer.xyz), vec3(32, 32)))
-			;
-			texturedShader.draw();
+			texturedShader.draw(this.pointer.xy, vec2(32, 32));
 		}
 
-		this.buttonsRow.render(
-			this.pxToScreen
-		);
+		this.buttonsRow.render();
 
 
 	}

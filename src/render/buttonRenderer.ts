@@ -2,10 +2,9 @@ import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {HorizontalAlign, FontStyle, ShadowStyle, Text, VerticalAlign} from './fontRenderer';
 import {Rect} from './shapes/rect';
-import {identity, scale, translate} from './utils/matrices';
-import {buttonRenderer, fontRenderer, textboxRenderer, texturedShader} from '../sharedResources';
+import {buttonRenderer, defaultRect, fontRenderer, textboxRenderer, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
-import {Mat4, vec2, Vec2, vec3, vec4, Vec4} from './utils/vector';
+import {Mat4, vec2, Vec2, vec4, Vec4} from './utils/vector';
 import {PointerEvent} from '../events';
 
 interface ButtonContent {
@@ -32,12 +31,7 @@ export class ButtonRow {
 		});
 	}
 
-	setPosition(x: number, y: number) {
-		this.px = Math.floor(x);
-		this.py = Math.floor(y);
-	}
-
-	render(pxToScreen: Mat4) {
+	render() {
 		this.buttons.forEach((button, idx) => {
 			buttonRenderer.render(
 				this.buttonsCoords[idx].x + this.px,
@@ -45,7 +39,6 @@ export class ButtonRow {
 				button.title,
 				this.hoveredButton === idx,
 				this.pressedButton === idx,
-				pxToScreen
 			);
 		});
 		if (this.hoveredButton !== undefined) {
@@ -54,7 +47,6 @@ export class ButtonRow {
 				const coords = this.buttonsCoords[this.hoveredButton];
 				textboxRenderer.renderTextBox(
 					this.px + coords.y, this.py, 120, button.tooltip,
-					pxToScreen,
 					VerticalAlign.BOTTOM,
 					HorizontalAlign.LEFT
 				);
@@ -94,8 +86,6 @@ export class ButtonRenderer implements Loadable, Destroyable {
 
 	textureMap: TextureMap = new TextureMap('ui/button/button');
 
-	r: Rect = new Rect(0, 0, 1, buttonHeight);
-
 	getButtonWidth(text: string) {
 		return fontRenderer.getStringWidth(text, FontStyle.BOLD) + 12;
 	}
@@ -105,7 +95,6 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		text: string,
 		hovered: boolean,
 		pressed: boolean,
-		projMatrix: Mat4
 	) {
 
 		const w = fontRenderer.getStringWidth(text, FontStyle.BOLD);
@@ -117,34 +106,17 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		);
 
 		texturedShader.useProgram();
-
 		texturedShader.setTexture('texture', this.textureMap.texture);
-		texturedShader.setMatrix('projectionMatrix', projMatrix);
-		texturedShader.setMatrix(
-			'modelMatrix',
-			scale(translate(identity(), vec3(x, y, 0)), vec3(6, 1, 1)),
-		);
-		texturedShader.setModel('aVertexPosition', this.r);
-		texturedShader.setModel('aTexturePosition', r1);
-		texturedShader.draw();
+		texturedShader.setModel('vertexPosition', defaultRect);
 
-		texturedShader.setMatrix('projectionMatrix', projMatrix);
-		texturedShader.setMatrix(
-			'modelMatrix',
-			scale(translate(identity(), vec3(x + 6, y, 0)), vec3(w, 1, 1)),
-		);
-		texturedShader.setModel('aVertexPosition', this.r);
-		texturedShader.setModel('aTexturePosition', r2);
-		texturedShader.draw();
+		texturedShader.setModel('texturePosition', r1);
+		texturedShader.draw(vec2(x, y), vec2(6, buttonHeight));
 
-		texturedShader.setMatrix('projectionMatrix', projMatrix);
-		texturedShader.setMatrix(
-			'modelMatrix',
-			scale(translate(identity(), vec3(x + 6 + w, y, 0)), vec3(6, 1, 1)),
-		);
-		texturedShader.setModel('aVertexPosition', this.r);
-		texturedShader.setModel('aTexturePosition', r3);
-		texturedShader.draw();
+		texturedShader.setModel('texturePosition', r2);
+		texturedShader.draw(vec2(x + 6, y), vec2(w, buttonHeight));
+
+		texturedShader.setModel('texturePosition', r3);
+		texturedShader.draw(vec2(x + 6 + w, y), vec2(6, buttonHeight));
 
 		const a = [102, 57, 49, 255].map(r => r / 255) as Vec4;
 		const b = [237, 180, 122, 255].map(r => r / 255) as Vec4;
@@ -156,7 +128,6 @@ export class ButtonRenderer implements Loadable, Destroyable {
 			y + 2,
 			FontStyle.BOLD,
 			hovered ? c : b,
-			projMatrix,
 			HorizontalAlign.LEFT,
 			1,
 			ShadowStyle.DIAGONAL,
