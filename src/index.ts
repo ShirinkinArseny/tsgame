@@ -100,14 +100,16 @@ const render = () => {
 		const now = new Date().getTime();
 		const diff = (now - prev) / 1000;
 		prev = now;
-
-		gl.clearColor(1.0, 1.0, 1.0, 1.0);
-
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
+		gl.clearColor(1.0, 1.0, 1.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
 		fbo.bind();
+		gl.clearColor(1, 1, 1, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		scene.render(fw, fh, diff);
 		fbo.unbind();
 

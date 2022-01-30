@@ -45,7 +45,6 @@ export class GameFieldScene implements Scene {
 	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	giraffe = new TextureMap('characters/giraffe/giraffe');
-	portraits = new TextureMap('characters/portraits/portraits');
 	icons: ImageTexture = new ImageTexture('ui/icons/icons.png');
 	iconRects: Rect[] = range(0, 3).map(idx => new Rect(idx / 4, 0, (idx + 1) / 4, 1 / 4));
 	pointer: Vec4 = vec4();
@@ -78,8 +77,8 @@ export class GameFieldScene implements Scene {
 				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
 			}
 		],
-		-180,
-		80
+		-fw / 2 + 50,
+		fh / 2 - 17
 	);
 
 	private selectedNode() {
@@ -239,6 +238,8 @@ export class GameFieldScene implements Scene {
 		}
 
 		this.buttonsRow.render();
+
+		frameRenderer.renderFrame(-fw / 2 + 1, fh / 2 - 49, 32, 32);
 
 
 	}

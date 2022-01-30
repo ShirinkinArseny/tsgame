@@ -1,7 +1,6 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {HorizontalAlign, FontStyle, ShadowStyle, Text, VerticalAlign} from './fontRenderer';
-import {Rect} from './shapes/rect';
 import {buttonRenderer, defaultRect, fontRenderer, textboxRenderer, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
 import {Mat4, vec2, Vec2, vec4, Vec4} from './utils/vector';
@@ -14,6 +13,8 @@ interface ButtonContent {
 }
 
 const buttonHeight = 16;
+const spaceBetweenButtons = 1;
+const u = 6; // ну это такая штука
 
 export class ButtonRow {
 
@@ -27,7 +28,7 @@ export class ButtonRow {
 			const w = buttonRenderer.getButtonWidth(b.title);
 			const x = xx;
 			this.buttonsCoords.push(vec2(x, x + w));
-			xx += w + 1;
+			xx += w + spaceBetweenButtons;
 		});
 	}
 
@@ -87,7 +88,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 	textureMap: TextureMap = new TextureMap('ui/button/button');
 
 	getButtonWidth(text: string) {
-		return fontRenderer.getStringWidth(text, FontStyle.BOLD) + 12;
+		return fontRenderer.getStringWidth(text, FontStyle.BOLD) + u * 2;
 	}
 
 	render(
@@ -110,10 +111,10 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setModel('vertexPosition', defaultRect);
 
 		texturedShader.setModel('texturePosition', r1);
-		texturedShader.draw(vec2(x, y), vec2(6, buttonHeight));
+		texturedShader.draw(vec2(x, y), vec2(u, buttonHeight));
 
 		texturedShader.setModel('texturePosition', r2);
-		texturedShader.draw(vec2(x + 6, y), vec2(w, buttonHeight));
+		texturedShader.draw(vec2(x + u, y), vec2(w, buttonHeight));
 
 		texturedShader.setModel('texturePosition', r3);
 		texturedShader.draw(vec2(x + 6 + w, y), vec2(6, buttonHeight));
@@ -124,7 +125,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 
 		fontRenderer.drawString(
 			text,
-			x + 7,
+			x + u + 1,
 			y + 2,
 			FontStyle.BOLD,
 			hovered ? c : b,
@@ -134,7 +135,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 			a
 		);
 
-		return w + 12;
+		return w + u * 2;
 	}
 
 	load(): Promise<any> {
