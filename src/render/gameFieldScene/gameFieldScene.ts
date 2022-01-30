@@ -14,7 +14,7 @@ import {error} from '../utils/errors';
 import {
 	coloredShader,
 	defaultRect,
-	fontRenderer, frameRenderer,
+	fontRenderer, frameRenderer, panelRenderer,
 	texturedShader
 } from '../../sharedResources';
 import {TextureMap} from '../textureMap';
@@ -43,7 +43,7 @@ export class GameFieldScene implements Scene {
 	pathToMove: FieldNode[] = [];
 	isNodeInPathToMove = new Map<FieldNode, boolean>();
 
-	buttonsRow = new ButtonRow(
+	buttonsRow1 = new ButtonRow(
 		[
 			{
 				title: 'Inventory',
@@ -66,10 +66,45 @@ export class GameFieldScene implements Scene {
 					console.log('CCC');
 				},
 				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
+			},
+			{
+				title: 'Menu',
+				onClick: () => {
+					console.log('DDD');
+				},
+				tooltip: buildText('Go to main menu')
 			}
 		],
-		-fw / 2 + 50,
+		-fw / 2 + 95,
 		fh / 2 - 17
+	);
+	buttonsRow2 = new ButtonRow(
+		[
+			{
+				title: 'Attack',
+				onClick: () => {
+					console.log('AAA');
+					this.gameField.turnQueue.startNextTurn();
+				},
+				tooltip: buildText('Hello world!')
+			},
+			{
+				title: 'Move',
+				onClick: () => {
+					console.log('BBB');
+				},
+				tooltip: buildText('Lorem ipsum dolor sit amet')
+			},
+			{
+				title: 'Surrender',
+				onClick: () => {
+					console.log('CCC');
+				},
+				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
+			}
+		],
+		-fw / 2 + 95,
+		fh / 2 - 34
 	);
 
 	private selectedNode() {
@@ -225,7 +260,10 @@ export class GameFieldScene implements Scene {
 			texturedShader.draw(this.pointer.xy, vec2(32, 32));
 		}
 
-		this.buttonsRow.render();
+		panelRenderer.render();
+
+		this.buttonsRow1.render();
+		this.buttonsRow2.render();
 
 		frameRenderer.renderFrame(-fw / 2 + 1, fh / 2 - 49, 32, 32);
 
@@ -245,7 +283,8 @@ export class GameFieldScene implements Scene {
 		pressedKeyMap: Map<string, boolean>,
 		pointerEvent: PointerEvent
 	) {
-		this.buttonsRow.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
+		this.buttonsRow1.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
+		this.buttonsRow2.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
 		const cursor = pointerEvent.xy.xyzw;
 		this.pointer = cursor.times(this.screenToPx);
 		this.hoveredNode = this.gameField.getNodes().find((node) =>
