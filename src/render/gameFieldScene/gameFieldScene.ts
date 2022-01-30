@@ -45,6 +45,7 @@ export class GameFieldScene implements Scene {
 	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	giraffe = new TextureMap('characters/giraffe/giraffe');
+	portraits = new TextureMap('characters/portraits/portraits');
 	icons: ImageTexture = new ImageTexture('ui/icons/icons.png');
 	iconRects: Rect[] = range(0, 3).map(idx => new Rect(idx / 4, 0, (idx + 1) / 4, 1 / 4));
 	pointer: Vec4 = vec4();
