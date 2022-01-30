@@ -10,7 +10,7 @@ export class TurnQueue {
 
 	getCurrentCharacter(): Character {
 		if (!this.currentCharacter) {
-			this.startTurn();
+			this.startNextTurn();
 		}
 		return this.currentCharacter as Character;
 	}
@@ -28,7 +28,7 @@ export class TurnQueue {
 		return this.characters;
 	}
 
-	startTurn(): Character {
+	startNextTurn(): Character {
 		if (this.currentQueue.length <= 0) {
 			this.currentQueue = this.characters.slice();
 		}
@@ -50,7 +50,7 @@ export class TurnQueue {
 	removeCharacter(character: Character) {
 
 		if (character === this.currentCharacter) {
-			this.startTurn();
+			this.startNextTurn();
 		}
 		const index1 = this.characters.indexOf(character);
 		if (index1 > -1) {
