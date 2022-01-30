@@ -1,4 +1,5 @@
 import {Character} from './character';
+import {Action} from './action';
 
 
 export class TurnQueue {
@@ -9,6 +10,11 @@ export class TurnQueue {
 
 	constructor(characters: Character[]) {
 		this.characters = characters.slice().sort((a, b) => a.initiative - b.initiative);
+
+		this.characters.forEach(ch => {
+			console.log(ch.name);
+		});
+
 	}
 
 	getCharacters() {
@@ -24,6 +30,10 @@ export class TurnQueue {
 		console.log(`start turn for ${this.currentCharacter.name}`);
 
 		return this.currentCharacter;
+	}
+
+	doAction(action: Action) {
+
 	}
 
 	getCurrentQueue() {
