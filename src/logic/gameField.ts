@@ -4,6 +4,7 @@ import {Character} from './character';
 import {Bimap} from '../render/utils/bimap';
 import {getSkewXmatrix, scale} from '../render/utils/matrices';
 import {multiplyMatToVec, vec3} from '../render/utils/vector';
+import {TurnQueue} from './TurnQueue';
 
 
 class AbstractCharacterState {
@@ -48,6 +49,7 @@ export class GameField {
 	private readonly graph: Array<FieldNode>;
 	private readonly characters: Bimap<Character, FieldNode>;
 	private readonly charactersMotions: Map<Character, CharacterMotion>;
+	turnQueue: TurnQueue;
 
 	constructor() {
 
@@ -113,6 +115,8 @@ export class GameField {
 			),
 			this.graph[3]
 		);
+
+		this.turnQueue = new TurnQueue(this.characters.map((a, b) => a));
 	}
 
 	getCharacters() {
