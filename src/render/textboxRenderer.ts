@@ -2,12 +2,12 @@ import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {HorizontalAlign, Text, VerticalAlign} from './fontRenderer';
 import {defaultRect, fontRenderer, texturedShader} from '../sharedResources';
-import {TextureMap} from './textureMap';
-import {vec2, vec4} from './utils/vector';
+import {vec2} from './utils/vector';
+import {FrameRenderer} from './frameRenderer';
 
 export class TextboxRenderer implements Loadable, Destroyable {
 
-	textureMap: TextureMap = new TextureMap('ui/tooltip/tooltip');
+	frameRenderer = new FrameRenderer('ui/tooltip/tooltip');
 
 	renderTextBox(
 		x: number, y: number,
@@ -51,41 +51,13 @@ export class TextboxRenderer implements Loadable, Destroyable {
 			}
 		})());
 
-		texturedShader.useProgram();
-
-		texturedShader.setTexture('texture', this.textureMap.texture);
-		texturedShader.setModel('vertexPosition', defaultRect);
-
-
-		const draw = (x: number, y: number, name: string, w: number | undefined = undefined, h: number | undefined = undefined) => {
-			texturedShader.setModel('texturePosition', this.textureMap.getRect(name));
-			texturedShader.draw(
-				vec2(x, y),
-				(w && h)
-					? vec2(w, h)
-					: vec2(u, u)
-			);
-		};
-
-		draw(xx + u, yy + u, 'M', ww, hh);
-
-		draw(xx, yy, 'LT');
-		draw(xx + u, yy, 'T', ww, u);
-		draw(xx + u + ww, yy, 'RT');
-
-		draw(xx, yy + u, 'L', u, hh);
-		draw(xx + u + ww, yy + u, 'R', u, hh);
-
-		draw(xx, yy + u + hh, 'LB');
-		draw(xx + u + ww, yy + u + hh, 'RB');
-		draw(xx + u, yy + u + hh, 'B', ww, u);
+		this.frameRenderer.renderFrame(xx, yy, ww, hh);
 
 		fontRenderer.drawText(
 			text,
 			xx + u,
 			yy + u,
 			w,
-			vec4(0, 0, 0, 1),
 			lh
 		);
 
@@ -94,13 +66,13 @@ export class TextboxRenderer implements Loadable, Destroyable {
 	load(): Promise<any> {
 		return Promise.all(
 			[
-				this.textureMap.load()
+				this.frameRenderer.load()
 			]
 		);
 	}
 
 	destroy() {
-		this.textureMap.destroy();
+		this.frameRenderer.destroy();
 	}
 
 

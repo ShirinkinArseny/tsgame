@@ -14,13 +14,14 @@ import {error} from '../utils/errors';
 import {
 	coloredShader,
 	defaultRect,
-	fontRenderer,
+	fontRenderer, frameRenderer,
 	texturedShader
 } from '../../sharedResources';
 import {TextureMap} from '../textureMap';
 import {Mat4, Vec2, vec2, Vec4, vec4} from '../utils/vector';
 import {PointerEvent} from '../../events';
 import {ButtonRow} from '../buttonRenderer';
+import {fh, fw} from '../../globalContext';
 
 export class GameFieldScene implements Scene {
 
@@ -67,8 +68,8 @@ export class GameFieldScene implements Scene {
 				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
 			}
 		],
-		-180,
-		80
+		-fw / 2 + 50,
+		fh / 2 - 17
 	);
 
 	private selectedNode() {
@@ -225,6 +226,8 @@ export class GameFieldScene implements Scene {
 		}
 
 		this.buttonsRow.render();
+
+		frameRenderer.renderFrame(-fw / 2 + 1, fh / 2 - 49, 32, 32);
 
 
 	}

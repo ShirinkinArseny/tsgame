@@ -55,6 +55,7 @@ const spaceWidth = 4;
 
 export type Word = {
 	word: string,
+	color: Vec4,
 	fontStyle: FontStyle
 };
 
@@ -66,7 +67,8 @@ export type Text = TextElement[];
 
 export function buildText(
 	text: string,
-	fontStyle: FontStyle = FontStyle.NORMAL
+	fontStyle: FontStyle = FontStyle.NORMAL,
+	color: Vec4 = vec4(0, 0, 0, 1)
 ): Text {
 	const textElements: TextElement[] = [];
 	const lastWord: string[] = [];
@@ -74,7 +76,8 @@ export function buildText(
 		if (lastWord.length > 0) {
 			textElements.push({
 				word: lastWord.join(''),
-				fontStyle: fontStyle
+				fontStyle: fontStyle,
+				color: color
 			});
 			lastWord.splice(0, lastWord.length);
 		}
@@ -202,14 +205,9 @@ export class FontRenderer implements Destroyable, Loadable {
 		}
 	}
 
-	private initRenderingTextColor(color: Vec4) {
-		this.shader.setVec4('color', color);
-	}
-
-	private initRenderingText(color: Vec4) {
+	private initRenderingText() {
 		this.shader.useProgram();
 		this.shader.setTexture('texture', this.fontImage);
-		this.initRenderingTextColor(color);
 	}
 
 	drawString(
@@ -222,7 +220,8 @@ export class FontRenderer implements Destroyable, Loadable {
 		shadowColor: Vec4 = vec4(0, 0, 0, 0.7)
 	) {
 		const yy = Math.floor(y);
-		this.initRenderingText(shadowStyle === ShadowStyle.NO ? color : shadowColor);
+		this.initRenderingText();
+		this.shader.setVec4('color', shadowStyle === ShadowStyle.NO ? color : shadowColor);
 		if (shadowStyle !== ShadowStyle.NO) {
 			if (shadowStyle === ShadowStyle.DIAGONAL) {
 				this.doDrawString(text, x + 1, yy + 1, kerning, fontStyle, align);
@@ -236,7 +235,7 @@ export class FontRenderer implements Destroyable, Loadable {
 					}
 				}
 			}
-			this.initRenderingTextColor(color);
+			this.shader.setVec4('color', color);
 		}
 		this.doDrawString(text, x, yy, kerning, fontStyle, align);
 	}
@@ -267,17 +266,17 @@ export class FontRenderer implements Destroyable, Loadable {
 	drawText(
 		text: Text,
 		x: number, y: number, w: number,
-		color: Vec4 = vec4(0, 0, 0, 1),
 		lineHeight = this.lineHeight,
 		kerning = 1.0
 	) {
 		const xx = Math.floor(x);
 		const yy = Math.floor(y);
 		const textPositions = this.getTextPositions(text, w, lineHeight, kerning);
-		this.initRenderingText(color);
+		this.initRenderingText();
 		text.forEach((textElement, idx) => {
 			if (textElement) {
 				const pos = textPositions[idx];
+				this.shader.setVec4('color', textElement.color);
 				this.doDrawString(textElement.word, pos.x + xx, pos.y + yy, kerning, textElement.fontStyle, HorizontalAlign.LEFT);
 			}
 		});
