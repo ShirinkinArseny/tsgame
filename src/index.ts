@@ -1,4 +1,4 @@
-import {gl, initGlobalGlContext} from './globalContext';
+import {fh, fw, gl, initGlobalGlContext} from './globalContext';
 import {defaultRect, loadSharedResources, texturedShader,} from './sharedResources';
 
 import {Scene} from './scene';
@@ -7,15 +7,13 @@ import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {error} from './render/utils/errors';
 import {FBO} from './render/textures/fbo';
-import {identity, ortho} from './render/utils/matrices';
 import {PointerEvent} from './events';
 import {vec2} from './render/utils/vector';
+import {Rect} from './render/shapes/rect';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
 
-const fw = 384;
-const fh = Math.floor(fw * 9 / 16);
 let pxPerPx: number = 1;
 
 enum CursorPressedState {
@@ -84,6 +82,12 @@ const render = () => {
 		prevScene = scene;
 	}
 	init.then(() => {
+
+		const identityRect = new Rect(
+			-0.5, 0.5,
+			0.5, -0.5
+		);
+
 		const isCursorPressed = cursorPressed !== CursorPressedState.Nothing;
 		let isCursorClicked = false;
 		if (cursorPressed === CursorPressedState.JustPressed) {
@@ -110,16 +114,12 @@ const render = () => {
 		pxPerPx = Math.min(Math.floor(canvasWidth / fw), Math.floor(canvasHeight / fh));
 
 		gl.viewport(0, 0, canvasWidth, canvasHeight);
-		texturedShader.useProgram();
+		texturedShader.useProgram(false);
 		texturedShader.setTexture('texture', fbo);
-		texturedShader.setMatrix(
-			'projectionMatrix',
-			ortho(0, 1, 1, 0)
-		);
-		texturedShader.setMatrix('modelMatrix', identity());
-		texturedShader.setModel('aTexturePosition', defaultRect);
-		texturedShader.setModel('aVertexPosition', defaultRect);
-		texturedShader.draw();
+		texturedShader.setVec2('screenSize', vec2(1, 1));
+		texturedShader.setModel('texturePosition', defaultRect);
+		texturedShader.setModel('vertexPosition', identityRect);
+		texturedShader.draw(vec2(0, 0), vec2(1, 1));
 
 
 		tryDetectError();

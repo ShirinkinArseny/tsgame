@@ -4,6 +4,7 @@ export const range = (from: number, to: number) => [...Array(to - from + 1)].map
 declare global {
 	interface Map<K, V> {
 		keysList(): Array<K>;
+
 		valuesList(): Array<V>;
 	}
 }

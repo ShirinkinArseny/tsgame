@@ -1,12 +1,12 @@
 import {Destroyable} from './utils/destroyable';
 import {ImageTexture} from './textures/imageTexture';
 import {Rect} from './shapes/rect';
-import {identity, scale, translate} from './utils/matrices';
 import {splitImage} from '../splitImage';
 import {LoadableShader} from './shaders/loadableShader';
 import {Loadable} from './utils/loadable';
 import {range} from './utils/lists';
-import {Mat4, Vec3, vec3, vec4, Vec4} from './utils/vector';
+import {vec2, Vec3, vec3, vec4, Vec4} from './utils/vector';
+import {defaultRect} from '../sharedResources';
 
 export enum FontStyle {
 	NORMAL, BOLD
@@ -96,7 +96,6 @@ export function buildText(
 export class FontRenderer implements Destroyable, Loadable {
 
 	private readonly fontImage: ImageTexture = new ImageTexture('ui/font/font.png');
-	private readonly mainRectangle: Rect = new Rect(0, 0, 1, 1);
 	private symbolRectangles = new Map<FontStyle, Map<string, [number, Rect]>>();
 	private shader: LoadableShader = new LoadableShader('font');
 	lineHeight: number = 0;
@@ -140,7 +139,6 @@ export class FontRenderer implements Destroyable, Loadable {
 
 	destroy() {
 		this.fontImage.destroy();
-		this.mainRectangle.destroy();
 		this.symbolRectangles.valuesList().flat()
 			.map(v => Object.values(v))
 			.flat(1)
@@ -163,16 +161,12 @@ export class FontRenderer implements Destroyable, Loadable {
 	): number {
 		const letter = this.getSymbol(symbol, fontStyle);
 		if (!letter) return spaceWidth;
-		this.shader.setMatrix(
-			'modelMatrix',
-
-			scale(translate(identity(),
-				vec3(x, y, 0.0)
-			), vec3(letter[0], this.lineHeight, 1.0))
+		this.shader.setModel('vertexPosition', defaultRect);
+		this.shader.setModel('texturePosition', letter[1]);
+		this.shader.draw(
+			vec2(x, y),
+			vec2(letter[0], this.lineHeight)
 		);
-		this.shader.setModel('aVertexPosition', this.mainRectangle);
-		this.shader.setModel('aTexturePosition', letter[1]);
-		this.shader.draw();
 		return letter[0];
 	}
 
@@ -209,15 +203,11 @@ export class FontRenderer implements Destroyable, Loadable {
 	}
 
 	private initRenderingTextColor(color: Vec4) {
-		this.shader.setVector4f('color', color);
+		this.shader.setVec4('color', color);
 	}
 
-	private initRenderingText(projectionMatrix: Mat4, color: Vec4) {
+	private initRenderingText(color: Vec4) {
 		this.shader.useProgram();
-		this.shader.setMatrix(
-			'projectionMatrix',
-			projectionMatrix
-		);
 		this.shader.setTexture('texture', this.fontImage);
 		this.initRenderingTextColor(color);
 	}
@@ -226,14 +216,13 @@ export class FontRenderer implements Destroyable, Loadable {
 		text: string, x: number, y: number,
 		fontStyle: FontStyle = FontStyle.NORMAL,
 		color: Vec4 = vec4(0, 0, 0, 1),
-		projectionMatrix: Mat4,
 		align: HorizontalAlign = HorizontalAlign.LEFT,
 		kerning = 1.0,
 		shadowStyle: ShadowStyle = ShadowStyle.NO,
 		shadowColor: Vec4 = vec4(0, 0, 0, 0.7)
 	) {
 		const yy = Math.floor(y);
-		this.initRenderingText(projectionMatrix, shadowStyle === ShadowStyle.NO ? color : shadowColor);
+		this.initRenderingText(shadowStyle === ShadowStyle.NO ? color : shadowColor);
 		if (shadowStyle !== ShadowStyle.NO) {
 			if (shadowStyle === ShadowStyle.DIAGONAL) {
 				this.doDrawString(text, x + 1, yy + 1, kerning, fontStyle, align);
@@ -279,14 +268,13 @@ export class FontRenderer implements Destroyable, Loadable {
 		text: Text,
 		x: number, y: number, w: number,
 		color: Vec4 = vec4(0, 0, 0, 1),
-		projectionMatrix: Mat4,
 		lineHeight = this.lineHeight,
 		kerning = 1.0
 	) {
 		const xx = Math.floor(x);
 		const yy = Math.floor(y);
 		const textPositions = this.getTextPositions(text, w, lineHeight, kerning);
-		this.initRenderingText(projectionMatrix, color);
+		this.initRenderingText(color);
 		text.forEach((textElement, idx) => {
 			if (textElement) {
 				const pos = textPositions[idx];
