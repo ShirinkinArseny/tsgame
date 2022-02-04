@@ -13,7 +13,7 @@ export class PanelRenderer implements Loadable, Destroyable {
 	render() {
 
 		texturedShader.useProgram();
-		texturedShader.setTexture('texture', this.textureMap.texture);
+		texturedShader.setTexture('texture', this.textureMap);
 		texturedShader.setModel('vertexPosition', defaultRect);
 
 		texturedShader.setModel('texturePosition', this.textureMap.getRect('A'));

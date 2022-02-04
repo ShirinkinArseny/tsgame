@@ -2,9 +2,9 @@ export class Action {
 
 	constructor(
 		public readonly name: string,
-		cost: number,
-		targetCell: any,
-		damage
+		readonly cost: number,
+		readonly targetCell: any,
+		readonly damage: number
 	) {
 	}
 

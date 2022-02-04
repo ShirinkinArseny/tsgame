@@ -42,6 +42,9 @@ export class ButtonRow {
 				this.pressedButton === idx,
 			);
 		});
+	}
+
+	renderTooltipLayer() {
 		if (this.hoveredButton !== undefined) {
 			const button = this.buttons[this.hoveredButton];
 			if (button.tooltip) {
@@ -107,7 +110,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		);
 
 		texturedShader.useProgram();
-		texturedShader.setTexture('texture', this.textureMap.texture);
+		texturedShader.setTexture('texture', this.textureMap);
 		texturedShader.setModel('vertexPosition', defaultRect);
 
 		texturedShader.setModel('texturePosition', r1);

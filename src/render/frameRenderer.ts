@@ -1,6 +1,6 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
-import {defaultRect, fontRenderer, texturedShader} from '../sharedResources';
+import {defaultRect, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
 import {vec2} from './utils/vector';
 
@@ -21,7 +21,7 @@ export class FrameRenderer implements Loadable, Destroyable {
 
 		texturedShader.useProgram();
 
-		texturedShader.setTexture('texture', this.textureMap.texture);
+		texturedShader.setTexture('texture', this.textureMap);
 		texturedShader.setModel('vertexPosition', defaultRect);
 
 

@@ -1,8 +1,7 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
 import {HorizontalAlign, Text, VerticalAlign} from './fontRenderer';
-import {defaultRect, fontRenderer, texturedShader} from '../sharedResources';
-import {vec2} from './utils/vector';
+import {fontRenderer} from '../sharedResources';
 import {FrameRenderer} from './frameRenderer';
 
 export class TextboxRenderer implements Loadable, Destroyable {

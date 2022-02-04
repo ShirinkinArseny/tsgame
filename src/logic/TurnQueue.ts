@@ -1,5 +1,6 @@
 import {Character} from './character';
 import {Action} from './action';
+import {Blackhole} from '../render/utils/blackhole';
 
 
 export class TurnQueue {
@@ -42,7 +43,8 @@ export class TurnQueue {
 	}
 
 	doAction(action: Action) {
-
+		//??
+		Blackhole.eat(action);
 	}
 
 	getCurrentQueue() {

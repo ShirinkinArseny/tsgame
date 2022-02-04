@@ -5,9 +5,10 @@ import {LoadableShader} from './render/shaders/loadableShader';
 import {TextboxRenderer} from './render/textboxRenderer';
 import {FrameRenderer} from './render/frameRenderer';
 import {PanelRenderer} from './render/panelRenderer';
+import {TexturedShader} from './render/shaders/texturedShader';
 
 export let defaultRect!: Rect;
-export let texturedShader!: LoadableShader;
+export let texturedShader!: TexturedShader;
 export let coloredShader!: LoadableShader;
 export let fontRenderer!: FontRenderer;
 export let buttonRenderer!: ButtonRenderer;
@@ -17,7 +18,7 @@ export let panelRenderer!: PanelRenderer;
 
 export const loadSharedResources = () => {
 	defaultRect = new Rect();
-	texturedShader = new LoadableShader('textured');
+	texturedShader = new TexturedShader();
 	coloredShader = new LoadableShader('colored');
 	fontRenderer = new FontRenderer();
 	buttonRenderer = new ButtonRenderer();

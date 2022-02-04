@@ -4,16 +4,21 @@ import {ImageTexture} from './textures/imageTexture';
 import {Rect} from './shapes/rect';
 import {range} from './utils/lists';
 import {error} from './utils/errors';
+import {Texture} from './textures/texture';
 
-export class TextureMap implements Loadable, Destroyable {
+export class TextureMap implements Loadable, Destroyable, Texture {
 
-	texture: ImageTexture;
+	private texture: ImageTexture;
 	rects = new Map<string, Rect[]>();
 	durations = new Map<string, number[]>();
 	totalDurations = new Map<string, number[]>();
 
 	constructor(private path: string) {
 		this.texture = new ImageTexture(path + '.png');
+	}
+
+	getTargetTexture() {
+		return this.texture.getTargetTexture();
 	}
 
 	getRects(tag: string): Rect[] {

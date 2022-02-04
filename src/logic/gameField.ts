@@ -116,7 +116,7 @@ export class GameField {
 			this.graph[3]
 		);
 
-		this.turnQueue = new TurnQueue(this.characters.map((a, b) => a));
+		this.turnQueue = new TurnQueue(this.characters.map((a) => a));
 	}
 
 	getCharacters() {
