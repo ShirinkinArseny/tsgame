@@ -8,7 +8,7 @@ import {GameField} from './logic/gameField';
 import {error} from './render/utils/errors';
 import {FBO} from './render/textures/fbo';
 import {PointerEvent} from './events';
-import {vec2} from './render/utils/vector';
+import {vec2, vec4} from './render/utils/vector';
 import {Rect} from './render/shapes/rect';
 
 let prevScene: Scene | undefined = undefined;
@@ -117,6 +117,7 @@ const render = () => {
 
 		gl.viewport(0, 0, canvasWidth, canvasHeight);
 		texturedShader.useProgram(false);
+		texturedShader.setVec4('texturePositionFrame', vec4(0, 0, 1, 1));
 		texturedShader.setTexture('texture', fbo);
 		texturedShader.setVec2('screenSize', vec2(1, 1));
 		texturedShader.setModel('texturePosition', defaultRect);

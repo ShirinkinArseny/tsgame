@@ -5,11 +5,12 @@ import {Rect} from './shapes/rect';
 import {range} from './utils/lists';
 import {error} from './utils/errors';
 import {Texture} from './textures/texture';
+import {vec4, Vec4} from './utils/vector';
 
 export class TextureMap implements Loadable, Destroyable, Texture {
 
 	private texture: ImageTexture;
-	rects = new Map<string, Rect[]>();
+	rects = new Map<string, Vec4[]>();
 	durations = new Map<string, number[]>();
 	totalDurations = new Map<string, number[]>();
 
@@ -21,11 +22,11 @@ export class TextureMap implements Loadable, Destroyable, Texture {
 		return this.texture.getTargetTexture();
 	}
 
-	getRects(tag: string): Rect[] {
+	getRects(tag: string): Vec4[] {
 		return this.rects.get(tag) || error('No tag with name ' + tag + ' found');
 	}
 
-	getRect(tag: string): Rect {
+	getRect(tag: string): Vec4 {
 		const rects = this.getRects(tag);
 		if (rects.length === 1) return rects[0];
 		const totalDurs = this.totalDurations.get(tag) || error('No duration for tag ' + tag);
@@ -67,11 +68,11 @@ export class TextureMap implements Loadable, Destroyable, Texture {
 							};
 						});
 					tags.forEach(({name, from, to}) => {
-						const rects: Rect[] = [];
+						const rects: Vec4[] = [];
 						const durations: number[] = [];
 						range(from, to).forEach(idx => {
 							const f = frames[idx];
-							rects.push(new Rect(
+							rects.push(vec4(
 								f.x / w,
 								f.y / h,
 								(f.x + f.w) / w,
@@ -94,7 +95,6 @@ export class TextureMap implements Loadable, Destroyable, Texture {
 
 	destroy() {
 		this.texture.destroy();
-		this.rects.valuesList().flat().forEach(r => r.destroy());
 	}
 
 

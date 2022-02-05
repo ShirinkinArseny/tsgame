@@ -99,7 +99,9 @@ export class Shader implements Destroyable, Loadable {
 		return this.attributesCache.get(name);
 	}
 
-	useProgram(autoSetScreenSize = true) {
+	useProgram(
+		autoSetScreenSize = true,
+	) {
 		if (!this.loaded) {
 			throw new Error('Trying to use shader while it is not loaded yet');
 		}

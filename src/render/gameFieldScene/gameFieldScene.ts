@@ -8,16 +8,13 @@ import {buildText, FontStyle, HorizontalAlign, ShadowStyle} from '../fontRendere
 import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
-import {
-	coloredShader,
-	fontRenderer, frameRenderer, panelRenderer,
-	texturedShader
-} from '../../sharedResources';
+import {coloredShader, fontRenderer, frameRenderer, panelRenderer, texturedShader} from '../../sharedResources';
 import {TextureMap} from '../textureMap';
 import {Mat4, Vec2, vec2, Vec4, vec4} from '../utils/vector';
 import {PointerEvent} from '../../events';
 import {ButtonRow} from '../buttonRenderer';
 import {fh, fw} from '../../globalContext';
+import {limit} from '../utils/string';
 
 export class GameFieldScene implements Scene {
 
@@ -43,31 +40,31 @@ export class GameFieldScene implements Scene {
 					console.log('AAA');
 					this.gameField.turnQueue.startNextTurn();
 				},
-				tooltip: buildText('Hello world!')
+				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.', FontStyle.SMALL)
 			},
 			{
 				title: 'Stats',
 				onClick: () => {
 					console.log('BBB');
 				},
-				tooltip: buildText('Lorem ipsum dolor sit amet')
+				tooltip: buildText('Lorem ipsum dolor sit amet', FontStyle.SMALL)
 			},
 			{
 				title: 'Map',
 				onClick: () => {
 					console.log('CCC');
 				},
-				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
+				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.', FontStyle.SMALL)
 			},
 			{
 				title: 'Menu',
 				onClick: () => {
 					console.log('DDD');
 				},
-				tooltip: buildText('Go to main menu')
+				tooltip: buildText('Go to main menu', FontStyle.SMALL)
 			}
 		],
-		-fw / 2 + 95,
+		-fw / 2 + 170,
 		fh / 2 - 17
 	);
 	buttonsRow2 = new ButtonRow(
@@ -76,26 +73,25 @@ export class GameFieldScene implements Scene {
 				title: 'Attack',
 				onClick: () => {
 					console.log('AAA');
-					this.gameField.turnQueue.startNextTurn();
 				},
-				tooltip: buildText('Hello world!')
+				tooltip: buildText('Hello world!', FontStyle.SMALL)
 			},
 			{
 				title: 'Move',
 				onClick: () => {
 					console.log('BBB');
 				},
-				tooltip: buildText('Lorem ipsum dolor sit amet')
+				tooltip: buildText('Lorem ipsum dolor sit amet', FontStyle.SMALL)
 			},
 			{
 				title: 'Surrender',
 				onClick: () => {
 					console.log('CCC');
 				},
-				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.')
-			}
+				tooltip: buildText('Hello world!', FontStyle.SMALL)
+			},
 		],
-		-fw / 2 + 95,
+		-fw / 2 + 170,
 		fh / 2 - 34
 	);
 
@@ -198,13 +194,17 @@ export class GameFieldScene implements Scene {
 
 	}
 
-
-	private drawShape(node: FieldNode, fillColor: Vec4 = vec4(0.8, 0.8, 0.8, 1), borderColor: Vec4 = vec4(1, 1, 1, 1)) {
+	private drawShape(node: FieldNode) {
+		const fillColor: Vec4 = vec4(0.8, 0.8, 0.8, 1);
+		const noBorderColor: Vec4 = vec4(0, 0, 0, 1);
+		const borderColor: Vec4 = vec4(1, 1, 1, 1);
+		const activeCharCell = vec4(0.4, 0.8, 0.4, 1.0);
+		const pathCell = vec4(0.6, 0.6, 0.6, 1.0);
 		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
 		const isSelectedNode = this.selectedNode() === node;
 		const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
 		if (isSelectedNode && characterState instanceof CharacterCalmState) {
-			coloredShader.setVec4('borderColor', vec4(0, 0, 0, 1));
+			coloredShader.setVec4('borderColor', noBorderColor);
 			coloredShader.setNumber('borderWidth', 3);
 		} else {
 			coloredShader.setVec4('borderColor', borderColor);
@@ -215,9 +215,9 @@ export class GameFieldScene implements Scene {
 		const nodeIsInPath = characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node);
 
 		if (nodeIsUnderActiveCharacter) {
-			coloredShader.setVec4('fillColor', vec4(0.4, 0.8, 0.4, 1.0));
+			coloredShader.setVec4('fillColor', activeCharCell);
 		} else if (nodeIsInPath) {
-			coloredShader.setVec4('fillColor', vec4(0.6, 0.6, 0.6, 1.0));
+			coloredShader.setVec4('fillColor', pathCell);
 		} else {
 			coloredShader.setVec4('fillColor', fillColor);
 		}
@@ -227,8 +227,12 @@ export class GameFieldScene implements Scene {
 
 	private drawCells() {
 		coloredShader.useProgram();
-		coloredShader.setVec2('modelTranslate', vec2(0, 0));
+		coloredShader.setVec2('modelTranslate', vec2(-1, 0));
 		coloredShader.setVec2('modelScale', vec2(1, 1));
+		this.gameField.getNodes().forEach((node) => {
+			this.drawShape(node);
+		});
+		coloredShader.setVec2('modelTranslate', vec2(0, 0));
 		this.gameField.getNodes().forEach((node) => {
 			this.drawShape(node);
 		});
@@ -312,6 +316,49 @@ export class GameFieldScene implements Scene {
 				vec2(-fw / 2 + 17, fh / 2 - 35),
 				vec2(16, 16)
 			);
+			const x1 = -fw / 2 + 55;
+			const x2 = -fw / 2 + 100;
+			const y1 = fh / 2 - 15;
+			const y2 = fh / 2 - 26;
+			const ren = (text: string, x: number, y: number,
+				fs: FontStyle = FontStyle.SMALL,
+				c: Vec4 = vec4(0.8, 0.6, 0.4, 1)
+			) => {
+				fontRenderer.drawString(
+					text,
+					x,
+					y,
+					fs,
+					c,
+					HorizontalAlign.LEFT,
+					1,
+					ShadowStyle.DIAGONAL,
+					vec4(0, 0, 0, 0.8)
+				);
+			};
+			ren(
+				limit(selected.name, 15),
+				x1,
+				fh / 2 - 38,
+				FontStyle.BOLD,
+				vec4(0.92, 0.70, 0.47, 1)
+			);
+			ren(
+				'hp: 3/15',
+				x1, y1,
+			);
+			ren(
+				'ap: 2/3',
+				x1, y2,
+			);
+			ren(
+				'vvp: 3/15',
+				x2, y1,
+			);
+			ren(
+				'oop: 2/3',
+				x2, y2,
+			);
 		}
 
 	}
@@ -324,8 +371,7 @@ export class GameFieldScene implements Scene {
 		texturedShader.useProgram();
 		texturedShader.setTexture('texture', this.portraits);
 		queue.forEach((ch, i) => {
-			texturedShader.setModel(
-				'texturePosition',
+			texturedShader.setTexturePosition(
 				this.portraits.getRect(ch.type)
 			);
 			texturedShader.draw(
@@ -356,7 +402,7 @@ export class GameFieldScene implements Scene {
 		this.pointer = cursor.times(this.screenToPx);
 		this.hoveredNode = this.gameField.getNodes().find((node) =>
 			isPointInConvexShape(this.pointer.xy, node.points));
-		if (pointerEvent.isCursorClicked) {
+		if (!pointerEvent.cancelled && pointerEvent.isCursorClicked) {
 			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
 			if (!newSelectedCharacter && this.selectedCharacter && this.hoveredNode) {
 				this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);

@@ -66,6 +66,7 @@ export class ButtonRow {
 		this.hoveredButton = undefined;
 		this.pressedButton = undefined;
 		this.buttonsCoords.forEach((btn, idx) => {
+			if (pointerEvent.cancelled) return;
 			if (
 				btn.x + this.px <= ptr.x &&
 				ptr.x <= btn.y + this.px &&
@@ -78,6 +79,7 @@ export class ButtonRow {
 				}
 				if (pointerEvent.isCursorClicked) {
 					this.buttons[idx].onClick();
+					pointerEvent.cancelled = true;
 				}
 			}
 		});
@@ -91,7 +93,11 @@ export class ButtonRenderer implements Loadable, Destroyable {
 	textureMap: TextureMap = new TextureMap('ui/button/button');
 
 	getButtonWidth(text: string) {
-		return fontRenderer.getStringWidth(text, FontStyle.BOLD) + u * 2;
+		let w = fontRenderer.getStringWidth(text, FontStyle.BOLD);
+		if (w % u !== 0) {
+			w += (u - w % u);
+		}
+		return w + 2 * u;
 	}
 
 	render(
@@ -101,7 +107,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		pressed: boolean,
 	) {
 
-		const w = fontRenderer.getStringWidth(text, FontStyle.BOLD);
+		const w = this.getButtonWidth(text) - 2 * u;
 
 		const [r1, r2, r3] = this.textureMap.getRects(
 			hovered
@@ -113,13 +119,16 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setTexture('texture', this.textureMap);
 		texturedShader.setModel('vertexPosition', defaultRect);
 
-		texturedShader.setModel('texturePosition', r1);
+		texturedShader.setTexturePosition(r1);
+		texturedShader.setVec2('textureScale', vec2(1, 1));
 		texturedShader.draw(vec2(x, y), vec2(u, buttonHeight));
 
-		texturedShader.setModel('texturePosition', r2);
+		texturedShader.setTexturePosition(r2);
+		texturedShader.setVec2('textureScale', vec2(w / u, 1));
 		texturedShader.draw(vec2(x + u, y), vec2(w, buttonHeight));
 
-		texturedShader.setModel('texturePosition', r3);
+		texturedShader.setTexturePosition(r3);
+		texturedShader.setVec2('textureScale', vec2(1, 1));
 		texturedShader.draw(vec2(x + 6 + w, y), vec2(6, buttonHeight));
 
 		const a = [102, 57, 49, 255].map(r => r / 255) as Vec4;
@@ -128,11 +137,11 @@ export class ButtonRenderer implements Loadable, Destroyable {
 
 		fontRenderer.drawString(
 			text,
-			x + u + 1,
+			x + u + w / 2 + 1,
 			y + 2,
 			FontStyle.BOLD,
 			hovered ? c : b,
-			HorizontalAlign.LEFT,
+			HorizontalAlign.CENTER,
 			1,
 			ShadowStyle.DIAGONAL,
 			a

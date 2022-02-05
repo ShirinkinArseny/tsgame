@@ -97,6 +97,7 @@ export function splitImage(image: HTMLImageElement): [number, Bounds[][]] {
 		const y1 = y0 + maxh;
 		return bounds.filter(b => b[2] >= y0 && b[3] <= y1);
 	}).map(a => {
+		const f = a[0];
 		a.splice(0, 1);
 		a.sort((a, b) => a[0] - b[0]);
 		let i = 1;
@@ -115,7 +116,11 @@ export function splitImage(image: HTMLImageElement): [number, Bounds[][]] {
 			}
 			i++;
 		}
-		return a;
+		return a.map(v => {
+			v[2] = f[2];
+			v[3] = f[3];
+			return v;
+		});
 	});
 
 	return [maxh + 1, lines];

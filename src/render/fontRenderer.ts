@@ -9,7 +9,7 @@ import {vec2, Vec3, vec3, vec4, Vec4} from './utils/vector';
 import {defaultRect} from '../sharedResources';
 
 export enum FontStyle {
-	NORMAL, BOLD
+	NORMAL, BOLD, SMALL
 }
 
 export enum HorizontalAlign {
@@ -39,7 +39,7 @@ const symbolicAlphabet = [
 ];
 
 const alphabet = [
-	...range(0, 1).map(fontStyleIdx => styledAlphabet.map(line =>
+	...range(0, 2).map(fontStyleIdx => styledAlphabet.map(line =>
 		line.split('').map(char => ({
 			char: char,
 			style: fontStyleIdx
@@ -120,12 +120,11 @@ export class FontRenderer implements Destroyable, Loadable {
 								if (!bound) {
 									throw new Error('WTF?');
 								}
-								const yy = lineIdx * (lineHeight + 2);
 								const args = [
 									(bound[0]),
-									yy,
+									bound[2],
 									(bound[1] + 1),
-									yy + lineHeight,
+									bound[2] + lineHeight,
 								];
 								const w = bound[1] - bound[0] + 1;
 

@@ -12,11 +12,11 @@ export class TextboxRenderer implements Loadable, Destroyable {
 		x: number, y: number,
 		w: number,
 		text: Text,
-		verticalAlign: VerticalAlign,
-		horizontalAlign: HorizontalAlign
+		verticalAlign: VerticalAlign = VerticalAlign.TOP,
+		horizontalAlign: HorizontalAlign = HorizontalAlign.LEFT
 	) {
 
-		const lh = fontRenderer.lineHeight - 2;
+		const lh = fontRenderer.lineHeight - 4;
 		const u = 8;
 
 		const positions = fontRenderer.getTextPositions(

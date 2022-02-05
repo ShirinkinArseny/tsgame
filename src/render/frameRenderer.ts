@@ -19,19 +19,19 @@ export class FrameRenderer implements Loadable, Destroyable {
 
 		const u = 8;
 
-		texturedShader.useProgram();
+		texturedShader.useProgram(true, false);
+
 
 		texturedShader.setTexture('texture', this.textureMap);
 		texturedShader.setModel('vertexPosition', defaultRect);
 
 
 		const draw = (x: number, y: number, name: string, w: number | undefined = undefined, h: number | undefined = undefined) => {
-			texturedShader.setModel('texturePosition', this.textureMap.getRect(name));
+			texturedShader.setTexturePosition(this.textureMap.getRect(name));
+			texturedShader.setVec2('textureScale', vec2((w || u) / u, (h || u) / u));
 			texturedShader.draw(
 				vec2(x, y),
-				(w && h)
-					? vec2(w, h)
-					: vec2(u, u)
+				vec2(w || u, h || u)
 			);
 		};
 

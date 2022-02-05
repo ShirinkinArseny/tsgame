@@ -16,14 +16,17 @@ export class PanelRenderer implements Loadable, Destroyable {
 		texturedShader.setTexture('texture', this.textureMap);
 		texturedShader.setModel('vertexPosition', defaultRect);
 
-		texturedShader.setModel('texturePosition', this.textureMap.getRect('A'));
-		texturedShader.draw(vec2(-fw / 2, fh / 2 - 64), vec2(96, 64));
+		texturedShader.setTexturePosition(this.textureMap.getRect('A'));
+		texturedShader.setVec2('textureScale', vec2(160 / 8, 1));
+		texturedShader.draw(vec2(-fw / 2, fh / 2 - 64), vec2(160, 64));
 
-		texturedShader.setModel('texturePosition', this.textureMap.getRect('B'));
-		texturedShader.draw(vec2(-fw / 2 + 96, fh / 2 - 64), vec2(8, 64));
+		texturedShader.setTexturePosition(this.textureMap.getRect('B'));
+		texturedShader.setVec2('textureScale', vec2(1, 1));
+		texturedShader.draw(vec2(-fw / 2 + 160, fh / 2 - 64), vec2(8, 64));
 
-		texturedShader.setModel('texturePosition', this.textureMap.getRect('C'));
-		texturedShader.draw(vec2(-fw / 2 + 96 + 8, fh / 2 - 64), vec2(400, 64));
+		texturedShader.setTexturePosition(this.textureMap.getRect('C'));
+		texturedShader.setVec2('textureScale', vec2(400 / 8, 1));
+		texturedShader.draw(vec2(-fw / 2 + 160 + 8, fh / 2 - 64), vec2(400, 64));
 
 	}
 
