@@ -65,6 +65,8 @@ export type TextElement = Word | NewLine;
 
 export type Text = TextElement[];
 
+const defaultTextShadowColor = vec4(0, 0, 0, 0.3);
+
 export function buildText(
 	text: string,
 	fontStyle: FontStyle = FontStyle.NORMAL,
@@ -216,7 +218,7 @@ export class FontRenderer implements Destroyable, Loadable {
 		align: HorizontalAlign = HorizontalAlign.LEFT,
 		kerning = 1.0,
 		shadowStyle: ShadowStyle = ShadowStyle.NO,
-		shadowColor: Vec4 = vec4(0, 0, 0, 0.7)
+		shadowColor: Vec4 = defaultTextShadowColor
 	) {
 		const yy = Math.floor(y);
 		this.initRenderingText();

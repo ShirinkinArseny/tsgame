@@ -1,12 +1,12 @@
 import {TextureMap} from '../textureMap';
-import {defaultRect, texturedShader} from '../../sharedResources';
+import {defaultRect} from '../../sharedResources';
 import {LoadableShader} from './loadableShader';
 import {vec2, Vec4} from '../utils/vector';
 
 export class TexturedShader extends LoadableShader {
 
-	constructor() {
-		super('textured');
+	constructor(url: string = 'textured') {
+		super(url);
 	}
 
 	override useProgram(

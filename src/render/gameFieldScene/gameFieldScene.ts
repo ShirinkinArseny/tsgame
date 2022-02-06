@@ -27,6 +27,7 @@ export class GameFieldScene implements Scene {
 	giraffe = new TextureMap('characters/giraffe/giraffe');
 	portraits = new TextureMap('characters/portraits/portraits');
 	icons = new TextureMap('ui/icons/icons');
+	background = new TextureMap('levels/playground/playground');
 	pointer: Vec4 = vec4();
 	selectedCharacter: Character | undefined;
 	pathToMove: FieldNode[] = [];
@@ -126,6 +127,7 @@ export class GameFieldScene implements Scene {
 			this.giraffe.load(),
 			this.icons.load(),
 			this.portraits.load(),
+			this.background.load()
 		]);
 	}
 
@@ -134,6 +136,7 @@ export class GameFieldScene implements Scene {
 		this.spacedude.destroy();
 		this.giraffe.destroy();
 		this.icons.destroy();
+		this.background.destroy();
 	}
 
 	private getCharacterSprite(character: Character): TextureMap {
@@ -186,6 +189,7 @@ export class GameFieldScene implements Scene {
 		);
 		this.screenToPx = reverse(this.pxToScreen);
 
+		this.drawBackground();
 		this.drawCells();
 		this.drawCharacters();
 		this.drawQueue();
@@ -194,32 +198,47 @@ export class GameFieldScene implements Scene {
 
 	}
 
-	private drawShape(node: FieldNode) {
-		const fillColor: Vec4 = vec4(0.8, 0.8, 0.8, 1);
-		const noBorderColor: Vec4 = vec4(0, 0, 0, 1);
-		const borderColor: Vec4 = vec4(1, 1, 1, 1);
-		const activeCharCell = vec4(0.4, 0.8, 0.4, 1.0);
-		const pathCell = vec4(0.6, 0.6, 0.6, 1.0);
+	private drawBackground() {
+		texturedShader.useProgram();
+		texturedShader.setSprite(this.background, 'Background');
+		texturedShader.draw(
+			vec2(-384 / 2, -384 / 2),
+			vec2(384, 384)
+		);
+	}
+
+	private drawNode(node: FieldNode) {
+
+		const fill: Vec4 = vec4(0, 0, 0, 0.1);
+		const fillPathCell = vec4(0, 0, 0, 0.2);
+		const fillActiveCharCell = vec4(0, 1, 0, 0.2);
+
+		const borderSelectedColor: Vec4 = vec4(0, 0, 0, 0.2);
+		const border: Vec4 = vec4(1, 1, 1, 0);
+
+		const width = 2;
+		const widthSelected = 4;
+
 		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
 		const isSelectedNode = this.selectedNode() === node;
 		const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
 		if (isSelectedNode && characterState instanceof CharacterCalmState) {
-			coloredShader.setVec4('borderColor', noBorderColor);
-			coloredShader.setNumber('borderWidth', 3);
+			coloredShader.setVec4('borderColor', borderSelectedColor);
+			coloredShader.setNumber('borderWidth', widthSelected);
 		} else {
-			coloredShader.setVec4('borderColor', borderColor);
-			coloredShader.setNumber('borderWidth', 2);
+			coloredShader.setVec4('borderColor', border);
+			coloredShader.setNumber('borderWidth', width);
 		}
 
 		const nodeIsUnderActiveCharacter = node === this.turnedNode();
 		const nodeIsInPath = characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node);
 
 		if (nodeIsUnderActiveCharacter) {
-			coloredShader.setVec4('fillColor', activeCharCell);
+			coloredShader.setVec4('fillColor', fillActiveCharCell);
 		} else if (nodeIsInPath) {
-			coloredShader.setVec4('fillColor', pathCell);
+			coloredShader.setVec4('fillColor', fillPathCell);
 		} else {
-			coloredShader.setVec4('fillColor', fillColor);
+			coloredShader.setVec4('fillColor', fill);
 		}
 		coloredShader.setModel('vertexPosition', shape);
 		coloredShader.draw(vec2(0, 0), vec2(1, 1));
@@ -227,14 +246,9 @@ export class GameFieldScene implements Scene {
 
 	private drawCells() {
 		coloredShader.useProgram();
-		coloredShader.setVec2('modelTranslate', vec2(-1, 0));
-		coloredShader.setVec2('modelScale', vec2(1, 1));
-		this.gameField.getNodes().forEach((node) => {
-			this.drawShape(node);
-		});
 		coloredShader.setVec2('modelTranslate', vec2(0, 0));
 		this.gameField.getNodes().forEach((node) => {
-			this.drawShape(node);
+			this.drawNode(node);
 		});
 	}
 
@@ -264,7 +278,7 @@ export class GameFieldScene implements Scene {
 				HorizontalAlign.CENTER,
 				1,
 				ShadowStyle.STROKE,
-				vec4(0, 0, 0, 1),
+				vec4(0, 0, 0, 0.4),
 			);
 		});
 	}
@@ -332,8 +346,7 @@ export class GameFieldScene implements Scene {
 					c,
 					HorizontalAlign.LEFT,
 					1,
-					ShadowStyle.DIAGONAL,
-					vec4(0, 0, 0, 0.8)
+					ShadowStyle.DIAGONAL
 				);
 			};
 			ren(

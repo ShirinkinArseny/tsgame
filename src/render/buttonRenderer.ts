@@ -5,6 +5,7 @@ import {buttonRenderer, defaultRect, fontRenderer, textboxRenderer, texturedShad
 import {TextureMap} from './textureMap';
 import {Mat4, vec2, Vec2, vec4, Vec4} from './utils/vector';
 import {PointerEvent} from '../events';
+import {fw} from '../globalContext';
 
 interface ButtonContent {
 	title: string;
@@ -49,8 +50,11 @@ export class ButtonRow {
 			const button = this.buttons[this.hoveredButton];
 			if (button.tooltip) {
 				const coords = this.buttonsCoords[this.hoveredButton];
+				const x = this.px + coords.y;
 				textboxRenderer.renderTextBox(
-					this.px + coords.y, this.py, 120, button.tooltip,
+					x, this.py,
+					Math.min(200, fw / 2 - x - 2 * u),
+					button.tooltip,
 					VerticalAlign.BOTTOM,
 					HorizontalAlign.LEFT
 				);
@@ -131,7 +135,6 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setVec2('textureScale', vec2(1, 1));
 		texturedShader.draw(vec2(x + 6 + w, y), vec2(6, buttonHeight));
 
-		const a = [102, 57, 49, 255].map(r => r / 255) as Vec4;
 		const b = [237, 180, 122, 255].map(r => r / 255) as Vec4;
 		const c = [255, 240, 200, 255].map(r => r / 255) as Vec4;
 
@@ -143,8 +146,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 			hovered ? c : b,
 			HorizontalAlign.CENTER,
 			1,
-			ShadowStyle.DIAGONAL,
-			a
+			ShadowStyle.DIAGONAL
 		);
 
 		return w + u * 2;

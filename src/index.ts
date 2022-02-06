@@ -1,5 +1,5 @@
 import {fh, fw, gl, initGlobalGlContext} from './globalContext';
-import {defaultRect, loadSharedResources, texturedShader,} from './sharedResources';
+import {defaultRect, loadSharedResources, postFxShader, texturedShader,} from './sharedResources';
 
 import {Scene} from './scene';
 import {tryDetectError} from './render/utils/gl';
@@ -100,8 +100,6 @@ const render = () => {
 		const now = new Date().getTime();
 		const diff = (now - prev) / 1000;
 		prev = now;
-		gl.enable(gl.BLEND);
-		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		gl.clearColor(1.0, 1.0, 1.0, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -110,19 +108,23 @@ const render = () => {
 		fbo.bind();
 		gl.clearColor(1, 1, 1, 1);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.BLEND);
+		gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+		gl.blendEquation(gl.FUNC_ADD);
 		scene.render(fw, fh, diff);
 		fbo.unbind();
 
 		pxPerPx = Math.min(Math.floor(canvasWidth / fw), Math.floor(canvasHeight / fh));
 
 		gl.viewport(0, 0, canvasWidth, canvasHeight);
-		texturedShader.useProgram(false);
-		texturedShader.setVec4('texturePositionFrame', vec4(0, 0, 1, 1));
-		texturedShader.setTexture('texture', fbo);
-		texturedShader.setVec2('screenSize', vec2(1, 1));
-		texturedShader.setModel('texturePosition', defaultRect);
-		texturedShader.setModel('vertexPosition', identityRect);
-		texturedShader.draw(vec2(0, 0), vec2(1, 1));
+		postFxShader.useProgram(false);
+		postFxShader.setNumber('seed', new Date().getTime() % 1000);
+		postFxShader.setVec4('texturePositionFrame', vec4(0, 0, 1, 1));
+		postFxShader.setTexture('texture', fbo);
+		postFxShader.setVec2('screenSize', vec2(1, 1));
+		postFxShader.setModel('texturePosition', defaultRect);
+		postFxShader.setModel('vertexPosition', identityRect);
+		postFxShader.draw(vec2(0, 0), vec2(1, 1));
 
 
 		tryDetectError();

@@ -71,7 +71,7 @@ export class GameField {
 		this.graph = graph;
 		this.charactersMotions = new Map<Character, CharacterMotion>();
 		this.characters = new Bimap<Character, FieldNode>();
-		this.characters.set(
+		/*this.characters.set(
 			new Character(
 				'Mike',
 				'spacedude',
@@ -81,7 +81,7 @@ export class GameField {
 				12,
 			),
 			this.graph[0]
-		);
+		);*/
 		this.characters.set(
 			new Character(
 				'Jeff',

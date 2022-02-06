@@ -9,6 +9,7 @@ import {TexturedShader} from './render/shaders/texturedShader';
 
 export let defaultRect!: Rect;
 export let texturedShader!: TexturedShader;
+export let postFxShader!: TexturedShader;
 export let coloredShader!: LoadableShader;
 export let fontRenderer!: FontRenderer;
 export let buttonRenderer!: ButtonRenderer;
@@ -19,6 +20,7 @@ export let panelRenderer!: PanelRenderer;
 export const loadSharedResources = () => {
 	defaultRect = new Rect();
 	texturedShader = new TexturedShader();
+	postFxShader = new TexturedShader('postfx');
 	coloredShader = new LoadableShader('colored');
 	fontRenderer = new FontRenderer();
 	buttonRenderer = new ButtonRenderer();
@@ -27,6 +29,7 @@ export const loadSharedResources = () => {
 	panelRenderer = new PanelRenderer();
 	return Promise.all([
 		texturedShader.load(),
+		postFxShader.load(),
 		coloredShader.load(),
 		fontRenderer.load(),
 		buttonRenderer.load(),
