@@ -55,7 +55,7 @@ export class GameField {
 
 		const graph = getGraph(100, 100, -100, -100, 20);
 		const skewMatrix = scale(
-			getSkewXmatrix(Math.PI / 6),
+			getSkewXmatrix(Math.atan2(0.5, 1)),
 			vec3(1, 0.7, 1)
 		);
 		graph.forEach(node => {
@@ -71,17 +71,6 @@ export class GameField {
 		this.graph = graph;
 		this.charactersMotions = new Map<Character, CharacterMotion>();
 		this.characters = new Bimap<Character, FieldNode>();
-		/*this.characters.set(
-			new Character(
-				'Mike',
-				'spacedude',
-				3.5,
-				5,
-				400,
-				12,
-			),
-			this.graph[0]
-		);*/
 		this.characters.set(
 			new Character(
 				'Jeff',
@@ -96,7 +85,7 @@ export class GameField {
 		this.characters.set(
 			new Character(
 				'<-XxX-[PRO.DeaШoN]-XxX->',
-				'spacedude',
+				'bus',
 				5,
 				5,
 				400,
@@ -125,6 +114,26 @@ export class GameField {
 
 	getNodes() {
 		return this.graph;
+	}
+
+	getCircleArea(a: FieldNode, radius: number): Array<FieldNode> {
+		const visitQueue: [FieldNode, number][] = [[a, 0]];
+		const visited = new Map<FieldNode, boolean>();
+		visited.set(a, true);
+		let idx = 0;
+		while (idx < visitQueue.length) {
+			const [node, length] = visitQueue[idx];
+			idx++;
+			if (length > radius) break;
+			const neigbors = node.nodes;
+			for (const n of neigbors) {
+				if (!visited.get(n) && !this.characters.getA(n)) {
+					visited.set(n, true);
+					visitQueue.push([n, length + 1]);
+				}
+			}
+		}
+		return visited.keysList();
 	}
 
 	findPath(a: FieldNode, b: FieldNode) {
@@ -171,6 +180,10 @@ export class GameField {
 		const from = this.characters.getB(character);
 		if (!from) return;
 		const path = this.findPath(from, to);
+		while (path.length > 0 && path.length - 1 > character.movePoints) {
+			path.splice(path.length - 1, 1);
+		}
+		character.movePoints -= path.length - 1;
 		const date = new Date().getTime();
 		this.charactersMotions.set(character, new CharacterMotion(
 			date, path
@@ -207,5 +220,11 @@ export class GameField {
 	getCharacterAt(node: FieldNode | undefined): Character | undefined {
 		if (!node) return undefined;
 		return this.characters.getA(node);
+	}
+
+	startNextTurn() {
+		const activeChar = this.turnQueue.getCurrentCharacter();
+		activeChar.movePoints = activeChar.movePointsPerTurn;
+		this.turnQueue.startNextTurn();
 	}
 }

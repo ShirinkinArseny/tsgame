@@ -81,6 +81,10 @@ export abstract class Vector<SELF extends Vector<SELF, SIZE>, SIZE extends Size>
 		return vecNegate(this as unknown as SELF);
 	}
 
+	round(): SELF {
+		return vecRound(this as unknown as SELF);
+	}
+
 }
 
 export class Vec1 extends Vector<Vec1, D1> {
@@ -132,6 +136,12 @@ function vecChangedComponents<T extends Vector<T, D>, D extends Size>(vector: T,
 	const clazz = vector.constructor as any;
 	return clazz.create(...range(0, vector.length - 1).map(i => newComponent(i)));
 }
+
+
+export function vecRound<T extends Vector<T, D>, D extends Size>(a: T): T {
+	return vecChangedComponents(a, (idx) => Math.round(a[idx]));
+}
+
 
 export function vecNegate<T extends Vector<T, D>, D extends Size>(a: T): T {
 	return vecChangedComponents(a, (idx) => -a[idx]);

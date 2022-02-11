@@ -1,5 +1,5 @@
 import {fh, fw, gl, initGlobalGlContext} from './globalContext';
-import {defaultRect, loadSharedResources, postFxShader, texturedShader,} from './sharedResources';
+import {defaultRect, loadSharedResources, postFxShader} from './sharedResources';
 
 import {Scene} from './scene';
 import {tryDetectError} from './render/utils/gl';
@@ -7,7 +7,7 @@ import {GameFieldScene} from './render/gameFieldScene/gameFieldScene';
 import {GameField} from './logic/gameField';
 import {error} from './render/utils/errors';
 import {FBO} from './render/textures/fbo';
-import {PointerEvent} from './events';
+import {PointerButton, PointerEvent} from './events';
 import {vec2, vec4} from './render/utils/vector';
 import {Rect} from './render/shapes/rect';
 
@@ -33,6 +33,7 @@ const pressedKeysMap = new Map<string, boolean>();
 let cursorX = 0;
 let cursorY = 0;
 let cursorPressed = CursorPressedState.Nothing;
+let cursorButton: PointerButton = PointerButton.LEFT;
 document.addEventListener('keydown', event => {
 	pressedKeysMap.set(event.code, true);
 }, false);
@@ -43,8 +44,10 @@ document.addEventListener('mousemove', event => {
 	cursorX = event.x;
 	cursorY = event.y;
 });
-document.addEventListener('mousedown', () => {
+document.addEventListener('mousedown', (e) => {
 	cursorPressed = CursorPressedState.JustPressed;
+	cursorButton =
+		e.button === 0 ? PointerButton.LEFT : PointerButton.RIGHT;
 });
 document.addEventListener('mouseup', () => {
 	if (cursorPressed === CursorPressedState.PressedAndHandled) {
@@ -127,9 +130,12 @@ const render = () => {
 		postFxShader.draw(vec2(0, 0), vec2(1, 1));
 
 
-		tryDetectError();
+		if (Math.random() > 0.999) {
+			tryDetectError();
+		}
 
 		const pointerEvent = new PointerEvent(
+			cursorButton,
 			vec2(
 				(cursorX + (-rawWidth + canvasWidth) / 2) / canvasWidth * 2 - 1,
 				(cursorY + (-rawHeight + canvasHeight) / 2) / canvasHeight * 2 - 1,

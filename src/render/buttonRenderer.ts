@@ -23,6 +23,10 @@ export class ButtonRow {
 	hoveredButton: number | undefined = undefined;
 	pressedButton: number | undefined = undefined;
 
+	isButtonHovered() {
+		return this.hoveredButton !== undefined;
+	}
+
 	constructor(private readonly buttons: ButtonContent[], private px: number, private py: number) {
 		let xx = 0;
 		buttons.forEach(b => {

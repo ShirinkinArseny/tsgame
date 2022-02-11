@@ -1,4 +1,11 @@
-export const limit = (v: string, length: number) => {
+export const limit = (
+	v: string,
+	length: number,
+	emp: boolean = true
+) => {
 	if (v.length <= length) return v;
-	return v.substring(0, length - 3) + '...';
+	if (emp) {
+		return v.substring(0, length - 3) + '...';
+	}
+	return v.substring(0, length);
 };

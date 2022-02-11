@@ -25,13 +25,12 @@ export class GameFieldScene implements Scene {
 	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	giraffe = new TextureMap('characters/giraffe/giraffe');
+	bus = new TextureMap('characters/bus/bus');
 	portraits = new TextureMap('characters/portraits/portraits');
 	icons = new TextureMap('ui/icons/icons');
 	background = new TextureMap('levels/playground/playground');
 	pointer: Vec4 = vec4();
 	selectedCharacter: Character | undefined;
-	pathToMove: FieldNode[] = [];
-	isNodeInPathToMove = new Map<FieldNode, boolean>();
 
 	buttonsRow1 = new ButtonRow(
 		[
@@ -39,7 +38,7 @@ export class GameFieldScene implements Scene {
 				title: 'End turn',
 				onClick: () => {
 					console.log('AAA');
-					this.gameField.turnQueue.startNextTurn();
+					this.gameField.startNextTurn();
 				},
 				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.', FontStyle.SMALL)
 			},
@@ -125,6 +124,7 @@ export class GameFieldScene implements Scene {
 		return Promise.all([
 			this.spacedude.load(),
 			this.giraffe.load(),
+			this.bus.load(),
 			this.icons.load(),
 			this.portraits.load(),
 			this.background.load()
@@ -145,6 +145,9 @@ export class GameFieldScene implements Scene {
 		}
 		if (character.type === 'spacedude') {
 			return this.spacedude;
+		}
+		if (character.type === 'bus') {
+			return this.bus;
 		}
 		throw new Error('Unknown character type: ' + character.type);
 	}
@@ -170,11 +173,11 @@ export class GameFieldScene implements Scene {
 		const state = this.gameField.getCharacterState(character);
 		switch (state.kind) {
 		case 'CharacterCalmState':
-			return 'Idle';
+			return 'A.Idle';
 		case 'CharacterMovingState': {
 			const a = state.from.center.xyzw.times(this.pxToScreen);
 			const b = state.to.center.xyzw.times(this.pxToScreen);
-			return a[0] > b[0] ? 'MoveLeft' : 'MoveRight';
+			return a[0] > b[0] ? 'A.Move.9' : 'A.Move.3';
 		}
 		}
 	}
@@ -193,9 +196,27 @@ export class GameFieldScene implements Scene {
 		this.drawCells();
 		this.drawCharacters();
 		this.drawQueue();
-		this.drawHoverIcon();
 		this.drawUI();
 
+		this.drawCursor();
+		this.drawFpsCounter();
+	}
+
+	private lastTime: number = new Date().getTime();
+	private averageDiff: number = 17;
+
+	private drawFpsCounter() {
+		const now = new Date().getTime();
+		const diff = (now - this.lastTime);
+		this.lastTime = now;
+		this.averageDiff = 0.98 * this.averageDiff + 0.02 * diff;
+		fontRenderer.drawString(
+			'FPS: ' + limit((1000 / this.averageDiff).toString(), 6, false),
+			-fw / 2 + 10,
+			-fh / 2 + 2,
+			FontStyle.SMALL,
+			vec4(1, 1, 1, 1)
+		);
 	}
 
 	private drawBackground() {
@@ -207,48 +228,99 @@ export class GameFieldScene implements Scene {
 		);
 	}
 
-	private drawNode(node: FieldNode) {
-
-		const fill: Vec4 = vec4(0, 0, 0, 0.1);
-		const fillPathCell = vec4(0, 0, 0, 0.2);
-		const fillActiveCharCell = vec4(0, 1, 0, 0.2);
-
-		const borderSelectedColor: Vec4 = vec4(0, 0, 0, 0.2);
-		const border: Vec4 = vec4(1, 1, 1, 0);
-
-		const width = 2;
-		const widthSelected = 4;
-
+	private drawNode(
+		node: FieldNode,
+		fillColor: Vec4,
+		strokeColor: Vec4,
+		strokeWidth: number,
+		dx: number = 0,
+		dy: number = 0
+	) {
+		coloredShader.setVec4('fillColor', fillColor);
+		coloredShader.setVec4('borderColor', strokeColor);
+		coloredShader.setNumber('borderWidth', strokeWidth);
 		const shape = this.nodeToShapeMap.get(node) || error('No shape for this node found');
-		const isSelectedNode = this.selectedNode() === node;
-		const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
-		if (isSelectedNode && characterState instanceof CharacterCalmState) {
-			coloredShader.setVec4('borderColor', borderSelectedColor);
-			coloredShader.setNumber('borderWidth', widthSelected);
-		} else {
-			coloredShader.setVec4('borderColor', border);
-			coloredShader.setNumber('borderWidth', width);
-		}
-
-		const nodeIsUnderActiveCharacter = node === this.turnedNode();
-		const nodeIsInPath = characterState instanceof CharacterCalmState && this.pathToMove.length > 0 && this.isNodeInPathToMove.get(node);
-
-		if (nodeIsUnderActiveCharacter) {
-			coloredShader.setVec4('fillColor', fillActiveCharCell);
-		} else if (nodeIsInPath) {
-			coloredShader.setVec4('fillColor', fillPathCell);
-		} else {
-			coloredShader.setVec4('fillColor', fill);
-		}
 		coloredShader.setModel('vertexPosition', shape);
-		coloredShader.draw(vec2(0, 0), vec2(1, 1));
+		coloredShader.draw(vec2(dx, dy), vec2(1, 1));
 	}
 
 	private drawCells() {
 		coloredShader.useProgram();
 		coloredShader.setVec2('modelTranslate', vec2(0, 0));
+		const fill: Vec4 = vec4(0, 0, 0, 0.015);
+		const fillMoveableCell = vec4(0, 0, 0, 0.05);
+		const fillPathCell = vec4(0, 0, 0, 0.15);
+
+		const borderSelectedColor: Vec4 = vec4(0, 0, 0, 0.2);
+		const borderActiveColor: Vec4 = vec4(0, 0.3, 0, 1);
+		const border: Vec4 = vec4(0, 0, 0, 0);
+
+		const width = 2;
+		const widthSelected = 1.8;
+
+
+		const selectedNode = this.selectedNode();
+		const selectedCharacter = this.selectedCharacter;
+
+		const isNodeInMoveableArea = new Map<FieldNode, boolean>();
+		if (selectedNode && this.selectedCharacter === this.turnedCharacter()) {
+			this.gameField.getCircleArea(
+				selectedNode,
+				this.selectedCharacter.movePoints - 1
+			).forEach(n => isNodeInMoveableArea.set(n, true));
+		}
+
+		const isNodeInPathToMove = new Map<FieldNode, boolean>();
+		const pathToMove: FieldNode[] = [];
+		if (selectedNode && this.hoveredNode && selectedCharacter) {
+			if (selectedNode === this.turnedNode()) {
+				pathToMove.push(...this.gameField.findPath(selectedNode, this.hoveredNode));
+			}
+			while (
+				pathToMove.length > 0 &&
+				pathToMove.length - 1 > selectedCharacter.movePoints) {
+				pathToMove.splice(pathToMove.length - 1, 1);
+			}
+			pathToMove.forEach((n) => isNodeInPathToMove.set(n, true));
+		}
+
 		this.gameField.getNodes().forEach((node) => {
-			this.drawNode(node);
+			const isSelectedNode = this.selectedNode() === node;
+			const isActiveNode = this.turnedNode() === node;
+			const characterState = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
+			const turnedCharacter = this.turnedCharacter();
+			let strokeColor: Vec4;
+			let strokeWidth: number;
+			const isActive = isActiveNode && this.gameField.getCharacterState(turnedCharacter) instanceof CharacterCalmState;
+			const isSelected = isSelectedNode && characterState instanceof CharacterCalmState;
+			if (isActive) {
+				strokeColor = borderActiveColor;
+				strokeWidth = widthSelected;
+			} else if (isSelected) {
+				strokeColor = borderSelectedColor;
+				strokeWidth = widthSelected;
+			} else {
+				strokeColor = border;
+				strokeWidth = width;
+			}
+			const nodeIsInMoveableArea = characterState instanceof CharacterCalmState && isNodeInMoveableArea.get(node);
+			const nodeIsInPath = characterState instanceof CharacterCalmState && pathToMove.length > 0 && isNodeInPathToMove.get(node);
+			let fillColor: Vec4;
+			if (nodeIsInPath) {
+				fillColor = fillPathCell;
+			} else if (nodeIsInMoveableArea) {
+				fillColor = fillMoveableCell;
+			} else {
+				fillColor = fill;
+			}
+			this.drawNode(
+				node,
+				fillColor,
+				strokeColor,
+				strokeWidth,
+				0,
+				0
+			);
 		});
 	}
 
@@ -260,7 +332,6 @@ export class GameFieldScene implements Scene {
 					point: this.getCharacterPosition(character)
 				};
 			});
-		1;
 		characters.sort((a, b) => a.point.y - b.point.y);
 		characters.forEach(({character, point}) => {
 			const sprite = this.getCharacterSprite(character);
@@ -278,32 +349,38 @@ export class GameFieldScene implements Scene {
 				HorizontalAlign.CENTER,
 				1,
 				ShadowStyle.STROKE,
-				vec4(0, 0, 0, 0.4),
+				vec4(0, 0, 0, 1),
 			);
 		});
 	}
 
-	private drawHoverIcon() {
-		let iconAction: string | undefined = undefined;
+	private drawCursor() {
+		let iconAction: string | undefined;
+		iconAction = 'Pointer';
 		if (
+			this.buttonsRow1.isButtonHovered() || this.buttonsRow2.isButtonHovered()
+		) {
+			iconAction = 'Hand';
+		} else if (
+			this.hoveredCharacter() &&
+			this.selectedCharacter !== this.hoveredCharacter()
+		) {
+			iconAction = 'Select';
+		} else if (
 			this.selectedCharacter &&
+			this.selectedCharacter.movePoints > 0 &&
 			this.turnedNode() === this.selectedNode() &&
 			this.gameField.getCharacterState(this.selectedCharacter) instanceof CharacterCalmState
 		) {
 			iconAction = 'Move';
 		}
-		if (
-			this.hoveredCharacter() &&
-			this.selectedCharacter !== this.hoveredCharacter()
-		) {
-			iconAction = 'Select';
-		}
 
-		if (iconAction) {
-			texturedShader.useProgram();
-			texturedShader.setSprite(this.icons, iconAction);
-			texturedShader.draw(this.pointer.xy, vec2(32, 32));
-		}
+		texturedShader.useProgram();
+		texturedShader.setSprite(this.icons, iconAction);
+		texturedShader.draw(vec2(
+			this.pointer.x - 16,
+			this.pointer.y - 16
+		).round(), vec2(32, 32));
 	}
 
 	private drawUI() {
@@ -331,7 +408,7 @@ export class GameFieldScene implements Scene {
 				vec2(16, 16)
 			);
 			const x1 = -fw / 2 + 55;
-			const x2 = -fw / 2 + 100;
+			const x2 = -fw / 2 + 110;
 			const y1 = fh / 2 - 15;
 			const y2 = fh / 2 - 26;
 			const ren = (text: string, x: number, y: number,
@@ -357,19 +434,19 @@ export class GameFieldScene implements Scene {
 				vec4(0.92, 0.70, 0.47, 1)
 			);
 			ren(
-				'hp: 3/15',
+				'health: ' + selected.hp + '/' + selected.maxHp,
 				x1, y1,
 			);
 			ren(
-				'ap: 2/3',
+				'steps: ' + selected.movePoints + '/' + selected.movePointsPerTurn,
 				x1, y2,
 			);
 			ren(
-				'vvp: 3/15',
+				'lorem: 3/15',
 				x2, y1,
 			);
 			ren(
-				'oop: 2/3',
+				'ipsum: 2/3',
 				x2, y2,
 			);
 		}
@@ -394,16 +471,6 @@ export class GameFieldScene implements Scene {
 		});
 	}
 
-	private updatePath() {
-		const selectedNode = this.selectedNode();
-		if (!selectedNode || !this.hoveredNode) return;
-		this.pathToMove = selectedNode === this.turnedNode()
-			? this.gameField.findPath(selectedNode, this.hoveredNode)
-			: [];
-		this.isNodeInPathToMove.clear();
-		this.pathToMove.forEach((n) => this.isNodeInPathToMove.set(n, true));
-	}
-
 	update(
 		dt: number,
 		pressedKeyMap: Map<string, boolean>,
@@ -423,11 +490,6 @@ export class GameFieldScene implements Scene {
 				this.selectedCharacter = newSelectedCharacter;
 			}
 		}
-		const cs = this.selectedCharacter && this.gameField.getCharacterState(this.selectedCharacter);
-		if (cs instanceof CharacterCalmState) {
-			this.updatePath();
-		}
-
 	}
 
 

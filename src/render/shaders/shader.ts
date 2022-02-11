@@ -6,8 +6,6 @@ import {ConvexShape} from '../shapes/convexShape';
 import {error} from '../utils/errors';
 import {gl, screenSize} from '../../globalContext';
 import {Mat4, vec2, Vec2, Vec3, Vec4} from '../utils/vector';
-import {TextureMap} from '../textureMap';
-import {defaultRect, texturedShader} from '../../sharedResources';
 
 let bindedShader: Shader | undefined;
 let bindedTextures: { [k: string]: number } = {};
