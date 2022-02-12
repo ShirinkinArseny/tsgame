@@ -6,12 +6,17 @@ import {LoadableShader} from './shaders/loadableShader';
 import {Loadable} from './utils/loadable';
 import {range} from './utils/lists';
 import {Vec2, vec2, vec4, Vec4} from './utils/vector';
-import {defaultRect} from '../sharedResources';
+import {defaultRect, fontRenderer} from '../sharedResources';
 import {error} from './utils/errors';
+import {Scene} from '../scene';
+import {PointerEvent} from '../events';
+import {Colors, defaultColor} from './utils/colors';
 
 export enum FontStyle {
-	NORMAL, BOLD, SMALL
+	REGULAR, BOLD, SMALL, SMALL_ITALIC
 }
+
+export const defaultFontStyle = FontStyle.REGULAR;
 
 export enum HorizontalAlign {
 	LEFT, RIGHT, CENTER
@@ -28,10 +33,11 @@ export enum ShadowStyle {
 }
 
 const styledAlphabet = [
-	'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-	'abcdefghijklmnopqrstuvwxyz1234567890.,:;=~\'"!$%^?*()[]<>_+-|/\\',
-	'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ',
-	'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+	'ABCDEFGHIJKLMNOPQRSTUVWXYZЮЯ_-|',
+	'abcdefghijklmnopqrstuvwxyzюя+/\\',
+	'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭ',
+	'абвгдеёжзийклмнопрстуфхцчшщъыьэ',
+	'1234567890.,:;=~\'"!$%^?*()[]<>#'
 ];
 
 const symbolicAlphabet = [
@@ -39,7 +45,7 @@ const symbolicAlphabet = [
 ];
 
 const alphabet = [
-	...range(0, 2).map(fontStyleIdx => styledAlphabet.map(line =>
+	...range(0, 3).map(fontStyleIdx => styledAlphabet.map(line =>
 		line.split('').map(char => ({
 			char: char,
 			style: fontStyleIdx
@@ -47,58 +53,61 @@ const alphabet = [
 	)).flat(1),
 	symbolicAlphabet.map(char => ({
 		char: char,
-		style: FontStyle.NORMAL
+		style: FontStyle.REGULAR
 	}))
 ];
 
 const spaceWidth = 4;
 
-export class Word {
-	constructor(
-		readonly word: string,
-		readonly color: Vec4,
-		readonly fontStyle: FontStyle,
-	) {
-	}
+export type Word = string | {
+	word: string;
+	color?: Vec4;
+	fontStyle?: FontStyle;
 }
 
-export const newLine = undefined;
-
-export class Column {
-	constructor(
-		readonly allowStretch: boolean,
-	) {
+export const destructWord = (word: Word) => {
+	if (typeof word === 'string') {
+		return {
+			word: word,
+			color: defaultColor,
+			fontStyle: defaultFontStyle
+		};
+	} else {
+		return {
+			word: word.word,
+			color: word.color || defaultColor,
+			fontStyle: word.fontStyle || defaultFontStyle
+		};
 	}
+};
+
+export type ColumnSettings = {
+	allowStretch?: boolean;
 }
 
-export class Table {
-	constructor(
-		readonly cells: Paragraph[][],
-		readonly columns: Column[] = cells[0].map(() => new Column(
-			true,
-		)),
-		readonly paddingBottom: number = 3
-	) {
-	}
+export type Table = {
+	cells: Paragraph[][];
+	columns?: ColumnSettings[];
+	paddingBottom?: number;
 }
 
-export class Paragraph {
-	constructor(
-		readonly words: Array<Word>,
-		readonly align: HorizontalAlign,
-		readonly paddingBottom: number = 3,
-		readonly lineHeight: number = 0,
-		readonly kerning: number = 1.0
-	) {
-	}
+export type Paragraph = {
+	words: Array<Word>;
+	align?: HorizontalAlign;
+	paddingBottom?: number;
+	lineHeight?: number;
+	kerning?: number;
 }
+
+export const defaultKerning = 1;
+export const defaultLineHeight = 0;
+export const defaultPaddingBottom = 3;
+export const defaultAllowStretch = true;
+export const defaultAlign = HorizontalAlign.LEFT;
 
 export type TextElement = Paragraph | Table;
 
-export class Text {
-	constructor(readonly elements: TextElement[]) {
-	}
-}
+export type Text = TextElement[]
 
 const defaultTextShadowColor = vec4(0, 0, 0, 0.3);
 
@@ -276,7 +285,7 @@ export class FontRenderer implements Destroyable, Loadable {
 
 	drawString(
 		text: string, x: number, y: number,
-		fontStyle: FontStyle = FontStyle.NORMAL,
+		fontStyle: FontStyle = FontStyle.REGULAR,
 		color: Vec4 = vec4(0, 0, 0, 1),
 		align: HorizontalAlign = HorizontalAlign.LEFT,
 		kerning = 1.0,
@@ -308,16 +317,20 @@ export class FontRenderer implements Destroyable, Loadable {
 		text: Paragraph,
 		width: number,
 	): ParagraphWordsPositions {
-		const sw = spaceWidth * text.kerning;
+		const kerning = text.kerning || defaultKerning;
+		const sw = spaceWidth * kerning;
 		let xx = 0;
 		let yy = 0;
 		let maxxx = 0;
 		let maxLineHeight = 0;
 		const lines: ParagraphLine[] = [];
 		let line: Vec2[] = [];
-		text.words.forEach((word, idx) => {
-			const w = this.getStringWidth(word.word, word.fontStyle);
-			const xxIfSameLine = xx + w * text.kerning + (idx !== 0 ? 0 : 1) * sw;
+		text.words.forEach((ww, idx) => {
+			const {
+				word, fontStyle
+			} = destructWord(ww);
+			const w = this.getStringWidth(word, fontStyle);
+			const xxIfSameLine = xx + w * kerning + (idx !== 0 ? 0 : 1) * sw;
 			if (xxIfSameLine > width) {
 				lines.push(new ParagraphLine(
 					line,
@@ -325,14 +338,14 @@ export class FontRenderer implements Destroyable, Loadable {
 				));
 				line = [];
 				xx = 0;
-				yy += maxLineHeight + text.lineHeight;
+				yy += maxLineHeight + (text.lineHeight || defaultLineHeight);
 				maxLineHeight = 0;
 			} else if (idx !== 0) {
 				xx += sw;
 			}
 			line.push(vec2(xx, yy));
-			maxLineHeight = Math.max(this.fontstyleLineHeight.get(word.fontStyle) || 0, maxLineHeight);
-			xx += w * text.kerning;
+			maxLineHeight = Math.max(this.fontstyleLineHeight.get(fontStyle) || 0, maxLineHeight);
+			xx += w * kerning;
 			maxxx = Math.max(maxxx, xx);
 		});
 		if (line.length > 0) {
@@ -344,7 +357,7 @@ export class FontRenderer implements Destroyable, Loadable {
 		return new ParagraphWordsPositions(
 			lines,
 			maxxx,
-			yy + maxLineHeight + text.paddingBottom
+			yy + maxLineHeight + (text.paddingBottom || defaultPaddingBottom)
 		);
 	}
 
@@ -361,20 +374,23 @@ export class FontRenderer implements Destroyable, Loadable {
 		let wordIndex = 0;
 		textPositions.lines.forEach(({positions, width}) => {
 			positions.forEach(wordsPosition => {
+				const align = text.align || defaultAlign;
 				let dx = 0;
-				if (text.align === HorizontalAlign.CENTER) {
+				if (align === HorizontalAlign.CENTER) {
 					dx = (w - width) / 2;
-				} else if (text.align === HorizontalAlign.RIGHT) {
+				} else if (align === HorizontalAlign.RIGHT) {
 					dx = w - width;
 				}
 				dx = Math.round(dx);
-				const textElement = text.words[wordIndex];
-				this.shader.setVec4('color', textElement.color);
+				const {
+					word, fontStyle, color
+				} = destructWord(text.words[wordIndex]);
+				this.shader.setVec4('color', color || defaultColor);
 				this.doDrawString(
-					textElement.word,
+					word,
 					wordsPosition.x + xx + dx, wordsPosition.y + yy,
-					text.kerning,
-					textElement.fontStyle,
+					text.kerning || defaultKerning,
+					fontStyle || defaultFontStyle,
 					HorizontalAlign.LEFT
 				);
 				wordIndex++;
@@ -400,9 +416,10 @@ export class FontRenderer implements Destroyable, Loadable {
 
 		const stupidSizes = table.cells.map(line =>
 			line.map(paragraph =>
-				paragraph.words.map(word =>
-					this.getStringWidth(word.word, word.fontStyle) + spaceWidth
-				).reduce((a, b) => a + b, 0)
+				paragraph.words.map(w => {
+					const {word, fontStyle} = destructWord(w);
+					return this.getStringWidth(word, fontStyle) + spaceWidth;
+				}).reduce((a, b) => a + b, 0)
 			)
 		);
 		const columnsSizes = range(0, table.cells[0].length - 1).map(columnIdx => {
@@ -411,15 +428,23 @@ export class FontRenderer implements Destroyable, Loadable {
 			).reduce((a, b) => Math.max(a, b), 0);
 		});
 
+		const isColumnStretchable = (idx: number) => {
+			if (!table.columns) return defaultAllowStretch;
+			const a = table.columns[idx].allowStretch;
+			if (a === undefined) return defaultKerning;
+			return a;
+		};
+
+
 		const fixedSizes = columnsSizes.map((s, idx) =>
-			table.columns[idx].allowStretch ? 0 : s
+			isColumnStretchable(idx) ? 0 : s
 		).reduce((a, b) => a + b);
 		const dymamicSizes = columnsSizes.map((s, idx) =>
-			table.columns[idx].allowStretch ? s : 0
+			isColumnStretchable(idx) ? s : 0
 		).reduce((a, b) => a + b);
 		const redistribute = w - fixedSizes;
 		columnsSizes.forEach((v, idx) => {
-			if (table.columns[idx].allowStretch) {
+			if (isColumnStretchable(idx)) {
 				columnsSizes[idx] = v * redistribute / dymamicSizes;
 			}
 		});
@@ -446,7 +471,7 @@ export class FontRenderer implements Destroyable, Loadable {
 			positions.push(l);
 			yy += maxCellHeight;
 		});
-		return new TableCellsPositions(positions, table.paddingBottom);
+		return new TableCellsPositions(positions, (table.paddingBottom || defaultPaddingBottom));
 	}
 
 	drawTableImpl(
@@ -483,14 +508,14 @@ export class FontRenderer implements Destroyable, Loadable {
 		w: number
 	): TextElementsPositions {
 		return new TextElementsPositions(
-			text.elements.map(e => {
-				if (e instanceof Paragraph) {
+			text.map(e => {
+				if ('words' in e) {
 					return this.getParagraphTextPositions(e, w);
 				}
-				if (e instanceof Table) {
+				if ('cells' in e) {
 					return this.getTableCellsPositions(e, w);
 				}
-				return error('Unknown element type: ' + e);
+				throw new Error('Unknown case');
 			})
 		);
 	}
@@ -502,8 +527,8 @@ export class FontRenderer implements Destroyable, Loadable {
 	) {
 		const xx = Math.floor(x);
 		let yy = Math.floor(y);
-		text.elements.forEach((e, idx) => {
-			if (e instanceof Paragraph) {
+		text.forEach((e, idx) => {
+			if ('words' in e) {
 				yy += this.drawParagraphImpl(
 					e,
 					xx,
@@ -511,7 +536,8 @@ export class FontRenderer implements Destroyable, Loadable {
 					w,
 					positions.positions[idx] as ParagraphWordsPositions
 				);
-			} else if (e instanceof Table) {
+			}
+			if ('cells' in e) {
 				yy += this.drawTableImpl(
 					e,
 					xx,
@@ -520,7 +546,6 @@ export class FontRenderer implements Destroyable, Loadable {
 				);
 			}
 		});
-
 	}
 
 	drawText(
@@ -533,4 +558,80 @@ export class FontRenderer implements Destroyable, Loadable {
 		this.drawTextImpl(text, x, y, w, positions);
 	}
 
+}
+
+const text: Text = [
+	{
+		words: [
+			{
+				word: 'Hello world!',
+				color: Colors.BLACK,
+				fontStyle: FontStyle.BOLD
+			}
+		],
+		align: HorizontalAlign.CENTER
+	},
+	{
+		words: [
+			{
+				word: 'Lorem Ipsum',
+				color: Colors.RED,
+			},
+			...'is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.'.split(' ')
+		],
+	},
+	{
+		cells: [
+			[
+				{words: ['1']},
+				{words: ['Lorem']},
+				{words: ['10.33'], align: HorizontalAlign.RIGHT},
+			],
+			[
+				{words: ['2']},
+				{words: ['Ipsum']},
+				{words: ['1337.00'], align: HorizontalAlign.RIGHT},
+			],
+			[
+				{words: ['3']},
+				{words: ['Dolor']},
+				{words: ['N/A'], align: HorizontalAlign.RIGHT},
+			]
+		]
+	},
+	{
+		words: 'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source.'.split(' ').map(w => ({
+			word: w,
+			color: Colors.BLACK,
+			fontStyle: FontStyle.SMALL_ITALIC,
+		}))
+	}
+];
+
+export class FontDemoScene implements Scene {
+	name = 'FontDemoScene';
+
+	destroy() {
+		//
+	}
+
+	load(): Promise<any> {
+		return Promise.resolve(undefined);
+	}
+
+	render(dt: number) {
+		fontRenderer.drawText(
+			text,
+			-160,
+			-90,
+			300
+		);
+	}
+
+	update(dt: number,
+		pressedKeyMap: Map<string, boolean>,
+		pointerEvent: PointerEvent,
+		changeScene: (scene: Scene) => void) {
+		//
+	}
 }

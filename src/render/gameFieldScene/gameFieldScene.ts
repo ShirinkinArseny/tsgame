@@ -4,7 +4,7 @@ import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
 import {identity, ortho, reverse} from '../utils/matrices';
 import {isPointInConvexShape} from '../utils/geom';
-import {Column, FontStyle, HorizontalAlign, Paragraph, ShadowStyle, Table, Text, Word} from '../fontRenderer';
+import {FontStyle, HorizontalAlign, ShadowStyle, Text} from '../fontRenderer';
 import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
@@ -16,66 +16,59 @@ import {ButtonRow} from '../buttonRenderer';
 import {fh, fw} from '../../globalContext';
 import {limit} from '../utils/string';
 import {Colors} from '../utils/colors';
+import {Spell, spells} from '../../logic/spell';
 
-const lipsum = 'Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s.'.split(' ').map(w => new Word(
-	w,
-	Colors.BLACK,
-	FontStyle.SMALL
-));
-
-const cells = [
-	['🔪', ' Damage', ':', '10'],
-	['🏹', ' Range', ':', '2'],
-	['📏', ' Radius', ':', '123']
-].map(line => line.map((w, idx) =>
-	new Paragraph(
-		[new Word(
-			w,
-			Colors.BLACK,
-			(idx === 1) ? FontStyle.BOLD : FontStyle.SMALL
-		)],
-		idx === 3 ? HorizontalAlign.RIGHT : idx === 2 ? HorizontalAlign.CENTER : HorizontalAlign.LEFT,
-		0
-	)
-));
-
-const text = new Text(
-	[
-		new Paragraph(
-			[
-				new Word(
-					'Domestic animals',
-					Colors.BLACK,
-					FontStyle.BOLD,
-				)
+const text: Text = [
+	{
+		words: [
+			{
+				word: 'Domestic animals',
+				fontStyle: FontStyle.BOLD,
+			}
+		]
+	},
+	{
+		words: 'Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s.'.split(' ').map(w => ({
+			word: w,
+			fontStyle: FontStyle.SMALL
+		})),
+		paddingBottom: 5
+	},
+	{
+		cells: [
+			['🔪', ' Damage', ':', '10'],
+			['🏹', ' Range', ':', '2'],
+			['📏', ' Radius', ':', '123']
+		].map(line => line.map((w, idx) => ({
+			type: 'paragraph',
+			words: [
+				{
+					word: w,
+					fontStyle: (idx === 1) ? FontStyle.BOLD : FontStyle.SMALL
+				}
 			],
-			HorizontalAlign.LEFT
-		),
-		new Paragraph(
-			lipsum,
-			HorizontalAlign.LEFT,
-			5
-		),
-		new Table(
-			cells,
-			[
-				new Column(false),
-				new Column(false),
-				new Column(true),
-				new Column(false),
-			],
-			8
-		),
-		new Paragraph(
-			[new Word(
-				'(Only for rangers)',
-				Colors.RED,
-				FontStyle.SMALL
-			)],
-			HorizontalAlign.CENTER
-		),
-	]
-);
+			align: idx === 3 ? HorizontalAlign.RIGHT : idx === 2 ? HorizontalAlign.CENTER : HorizontalAlign.LEFT,
+			paddingBottom: 0
+		}))),
+		columns: [
+			{allowStretch: false},
+			{allowStretch: false},
+			{allowStretch: true},
+			{allowStretch: false},
+		],
+		paddingBottom: 8
+	},
+	{
+		words: [
+			{
+				word: '(Only for rangers)',
+				color: Colors.RED,
+				fontStyle: FontStyle.SMALL
+			}
+		],
+		align: HorizontalAlign.CENTER
+	}
+];
 
 export class GameFieldScene implements Scene {
 
@@ -89,8 +82,10 @@ export class GameFieldScene implements Scene {
 	bus = new TextureMap('characters/bus/bus');
 	portraits = new TextureMap('characters/portraits/portraits');
 	background = new TextureMap('levels/playground/playground');
+	spellsIcons = new TextureMap('ui/spells/spells');
 	pointer: Vec4 = vec4();
 	selectedCharacter: Character | undefined;
+	selectedSpell: Spell | undefined;
 
 	buttonsRow1 = new ButtonRow(
 		[
@@ -98,7 +93,6 @@ export class GameFieldScene implements Scene {
 				title: 'End turn',
 				onClick: () => {
 					console.log('AAA');
-					this.gameField.startNextTurn();
 				},
 				tooltip: text
 			},
@@ -128,29 +122,32 @@ export class GameFieldScene implements Scene {
 		fh / 2 - 17
 	);
 	buttonsRow2 = new ButtonRow(
-		[
-			{
-				title: 'Attack',
+		spells
+			.map(spell => ({
+				sprite: this.spellsIcons,
+				tag: spell.title,
 				onClick: () => {
-					console.log('AAA');
+					if (this.selectedCharacter) {
+						if (spell.castEffectWithoutTarget) {
+							if (spell.isAllowed(
+								this.gameField,
+								this.selectedCharacter
+							)) {
+								this.selectedSpell = undefined;
+								spell.castEffectWithoutTarget(
+									this.gameField,
+									this.selectedCharacter,
+								);
+							}
+						} else {
+							this.selectedSpell = spell;
+						}
+					}
 				},
-				tooltip: text
-			},
-			{
-				title: 'Move',
-				onClick: () => {
-					console.log('BBB');
-				},
-				tooltip: text
-			},
-			{
-				title: 'Surrender',
-				onClick: () => {
-					console.log('CCC');
-				},
-				tooltip: text
-			},
-		],
+				tooltip: spell.description,
+				isSelected: () => this.selectedSpell === spell
+			}))
+		,
 		-fw / 2 + 170,
 		fh / 2 - 34
 	);
@@ -186,7 +183,8 @@ export class GameFieldScene implements Scene {
 			this.giraffe.load(),
 			this.bus.load(),
 			this.portraits.load(),
-			this.background.load()
+			this.background.load(),
+			this.spellsIcons.load()
 		]);
 	}
 
@@ -197,6 +195,7 @@ export class GameFieldScene implements Scene {
 		this.bus.destroy();
 		this.portraits.destroy();
 		this.background.destroy();
+		this.spellsIcons.destroy();
 	}
 
 	private getCharacterSprite(character: Character): TextureMap {
@@ -242,13 +241,13 @@ export class GameFieldScene implements Scene {
 		}
 	}
 
-	render(w: number, h: number) {
+	render() {
 
 		this.pxToScreen = ortho(
-			-w / 2,
-			w / 2,
-			-h / 2,
-			h / 2,
+			-fw / 2,
+			fw / 2,
+			-fh / 2,
+			fh / 2,
 		);
 		this.screenToPx = reverse(this.pxToScreen);
 
@@ -306,40 +305,41 @@ export class GameFieldScene implements Scene {
 		coloredShader.useProgram();
 		coloredShader.setVec2('modelTranslate', vec2(0, 0));
 		const fill: Vec4 = vec4(0, 0, 0, 0.015);
-		const fillMoveableCell = vec4(0, 0, 0, 0.05);
-		const fillPathCell = vec4(0, 0, 0, 0.15);
+		const fillAllowedCell = vec4(0, 0, 0, 0.05);
+		const fillAffectedCell = vec4(0, 0, 0, 0.15);
 
+		const borderActiveSelectedColor: Vec4 = vec4(0, 0.4, 0, 1);
 		const borderSelectedColor: Vec4 = vec4(0, 0, 0, 0.2);
-		const borderActiveColor: Vec4 = vec4(0, 0.3, 0, 1);
+		const borderActiveColor: Vec4 = vec4(0, 0.3, 0, 0.4);
 		const border: Vec4 = vec4(0, 0, 0, 0);
 
 		const width = 2;
+		const widthActiveSelected = 4;
 		const widthSelected = 1.8;
 
-
-		const selectedNode = this.selectedNode();
-		const selectedCharacter = this.selectedCharacter;
-
-		const isNodeInMoveableArea = new Map<FieldNode, boolean>();
-		if (selectedNode && this.selectedCharacter === this.turnedCharacter()) {
-			this.gameField.getCircleArea(
-				selectedNode,
-				this.selectedCharacter.movePoints - 1
-			).forEach(n => isNodeInMoveableArea.set(n, true));
+		const isNodeInAllowedArea = new Map<FieldNode, boolean>();
+		if (
+			this.selectedSpell &&
+			this.selectedCharacter
+		) {
+			this.selectedSpell.getAllowedNodes(
+				this.gameField,
+				this.selectedCharacter,
+			).forEach(n => isNodeInAllowedArea.set(n, true));
 		}
 
-		const isNodeInPathToMove = new Map<FieldNode, boolean>();
-		const pathToMove: FieldNode[] = [];
-		if (selectedNode && this.hoveredNode && selectedCharacter) {
-			if (selectedNode === this.turnedNode()) {
-				pathToMove.push(...this.gameField.findPath(selectedNode, this.hoveredNode));
-			}
-			while (
-				pathToMove.length > 0 &&
-				pathToMove.length - 1 > selectedCharacter.movePoints) {
-				pathToMove.splice(pathToMove.length - 1, 1);
-			}
-			pathToMove.forEach((n) => isNodeInPathToMove.set(n, true));
+		const isNodeInAffectedArea = new Map<FieldNode, boolean>();
+		if (
+			this.selectedSpell &&
+			this.selectedCharacter &&
+			this.hoveredNode &&
+			isNodeInAllowedArea.get(this.hoveredNode)
+		) {
+			this.selectedSpell.getAffectedNodes(
+				this.gameField,
+				this.selectedCharacter,
+				this.hoveredNode
+			).forEach((n) => isNodeInAffectedArea.set(n, true));
 		}
 
 		this.gameField.getNodes().forEach((node) => {
@@ -351,7 +351,10 @@ export class GameFieldScene implements Scene {
 			let strokeWidth: number;
 			const isActive = isActiveNode && this.gameField.getCharacterState(turnedCharacter) instanceof CharacterCalmState;
 			const isSelected = isSelectedNode && characterState instanceof CharacterCalmState;
-			if (isActive) {
+			if (isActive && isSelected) {
+				strokeColor = borderActiveSelectedColor;
+				strokeWidth = widthActiveSelected;
+			} else if (isActive) {
 				strokeColor = borderActiveColor;
 				strokeWidth = widthSelected;
 			} else if (isSelected) {
@@ -361,13 +364,13 @@ export class GameFieldScene implements Scene {
 				strokeColor = border;
 				strokeWidth = width;
 			}
-			const nodeIsInMoveableArea = characterState instanceof CharacterCalmState && isNodeInMoveableArea.get(node);
-			const nodeIsInPath = characterState instanceof CharacterCalmState && pathToMove.length > 0 && isNodeInPathToMove.get(node);
+			const nodeIsInAllowedArea = characterState instanceof CharacterCalmState && isNodeInAllowedArea.get(node);
+			const nodeIsInAffectedArea = characterState instanceof CharacterCalmState && isNodeInAffectedArea.get(node);
 			let fillColor: Vec4;
-			if (nodeIsInPath) {
-				fillColor = fillPathCell;
-			} else if (nodeIsInMoveableArea) {
-				fillColor = fillMoveableCell;
+			if (nodeIsInAffectedArea) {
+				fillColor = fillAffectedCell;
+			} else if (nodeIsInAllowedArea) {
+				fillColor = fillAllowedCell;
 			} else {
 				fillColor = fill;
 			}
@@ -421,7 +424,9 @@ export class GameFieldScene implements Scene {
 		panelRenderer.render();
 
 		this.buttonsRow1.render();
-		this.buttonsRow2.render();
+		if (this.selectedCharacter === this.turnedCharacter()) {
+			this.buttonsRow2.render();
+		}
 
 		this.buttonsRow1.renderTooltipLayer();
 		this.buttonsRow2.renderTooltipLayer();
@@ -509,25 +514,40 @@ export class GameFieldScene implements Scene {
 		this.buttonsRow2.update(dt, pressedKeyMap, this.screenToPx, pointerEvent);
 		const cursor = pointerEvent.xy.xyzw;
 		this.pointer = cursor.times(this.screenToPx);
-		this.hoveredNode = this.gameField.getNodes().find((node) =>
+		const hoveredNode = this.gameField.getNodes().find((node) =>
 			isPointInConvexShape(this.pointer.xy, node.points));
+		this.hoveredNode = hoveredNode;
 		if (pointerEvent.cancelled) return;
 
 		if (pointerEvent.isCursorClicked) {
-			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
-			if (pointerEvent.button === PointerButton.LEFT) {
-				this.selectedCharacter = newSelectedCharacter;
-			} else if (pointerEvent.button === PointerButton.RIGHT) {
-				if (this.selectedCharacter && this.hoveredNode) {
-					if (!newSelectedCharacter) {
-						this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
-					} else {
-						this.gameField.cast(
-							this.selectedCharacter,
-							this.selectedCharacter.spells[0],
-							this.hoveredNode
-						);
+
+			if (pointerEvent.button == PointerButton.RIGHT) {
+				this.selectedSpell = undefined;
+				this.selectedCharacter = undefined;
+			} else {
+				if (this.selectedCharacter === undefined || this.selectedSpell === undefined) {
+					const hoveredCharacter = this.gameField.getCharacterAt(this.hoveredNode);
+					if (pointerEvent.button === PointerButton.LEFT) {
+						this.selectedCharacter = hoveredCharacter;
+						if (this.selectedCharacter !== this.turnedCharacter()) {
+							this.selectedSpell = undefined;
+						}
 					}
+				} else if (
+					pointerEvent.button === PointerButton.LEFT &&
+					hoveredNode &&
+					this.selectedCharacter &&
+					this.selectedCharacter === this.turnedCharacter() &&
+					this.selectedSpell.isAllowed(
+						this.gameField,
+						this.selectedCharacter
+					)
+				) {
+					this.selectedSpell.castEffectWithTarget(
+						this.gameField,
+						this.selectedCharacter,
+						hoveredNode
+					);
 				}
 			}
 		}

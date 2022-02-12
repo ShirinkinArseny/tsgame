@@ -120,7 +120,11 @@ export class GameField {
 		return this.graph;
 	}
 
-	getCircleArea(a: FieldNode, radius: number): Array<FieldNode> {
+	getCircleArea(
+		a: FieldNode,
+		radius: number,
+		includingCharacterNodes: boolean = false
+	): Array<FieldNode> {
 		const visitQueue: [FieldNode, number][] = [[a, 0]];
 		const visited = new Map<FieldNode, boolean>();
 		visited.set(a, true);
@@ -128,10 +132,10 @@ export class GameField {
 		while (idx < visitQueue.length) {
 			const [node, length] = visitQueue[idx];
 			idx++;
-			if (length > radius) break;
+			if (length >= radius) break;
 			const neigbors = node.nodes;
 			for (const n of neigbors) {
-				if (!visited.get(n) && !this.characters.getA(n)) {
+				if (!visited.get(n) && (includingCharacterNodes || !this.characters.getA(n))) {
 					visited.set(n, true);
 					visitQueue.push([n, length + 1]);
 				}
@@ -233,6 +237,6 @@ export class GameField {
 	}
 
 	cast(from: Character, spell: Spell, to: FieldNode) {
-		//
+
 	}
 }

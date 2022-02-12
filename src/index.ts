@@ -114,7 +114,7 @@ const render = () => {
 		gl.enable(gl.BLEND);
 		gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 		gl.blendEquation(gl.FUNC_ADD);
-		scene.render(fw, fh, diff);
+		scene.render(diff);
 		fbo.unbind();
 
 		pxPerPx = Math.min(Math.floor(canvasWidth / fw), Math.floor(canvasHeight / fh));
@@ -158,6 +158,7 @@ const render = () => {
 
 
 loadSharedResources().then(() => {
+	//scene = new FontDemoScene();
 	scene = new GameFieldScene(new GameField());
 	render();
 });

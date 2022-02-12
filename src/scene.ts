@@ -14,6 +14,6 @@ export interface Scene extends Destroyable, Loadable {
 		pointerEvent: PointerEvent,
 		changeScene: (scene: Scene) => void): void;
 
-	render(w: number, h: number, dt: number): void;
+	render(dt: number): void;
 
 }

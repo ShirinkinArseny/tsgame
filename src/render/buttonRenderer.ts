@@ -1,17 +1,29 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
-import {HorizontalAlign, FontStyle, ShadowStyle, Paragraph, VerticalAlign, Text} from './fontRenderer';
+import {HorizontalAlign, FontStyle, ShadowStyle, VerticalAlign, Text} from './fontRenderer';
 import {buttonRenderer, defaultRect, fontRenderer, textboxRenderer, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
 import {Mat4, vec2, Vec2, vec4, Vec4} from './utils/vector';
 import {PointerEvent} from '../events';
 import {fw} from '../globalContext';
 
-interface ButtonContent {
-	title: string;
+export interface AbstractButtonContent {
 	onClick: () => any;
 	tooltip: Text;
+	isSelected?: () => boolean;
 }
+
+
+export interface TextButtonContent extends AbstractButtonContent {
+	title: string,
+}
+
+export interface IconButtonContent extends AbstractButtonContent {
+	sprite: TextureMap,
+	tag: string,
+}
+
+export type ButtonContent = TextButtonContent | IconButtonContent;
 
 const buttonHeight = 16;
 const spaceBetweenButtons = 1;
@@ -30,7 +42,11 @@ export class ButtonRow {
 	constructor(private readonly buttons: ButtonContent[], private px: number, private py: number) {
 		let xx = 0;
 		buttons.forEach(b => {
-			const w = buttonRenderer.getButtonWidth(b.title);
+			const w =
+				('title' in b)
+					? buttonRenderer.getButtonWidth(b.title)
+					: buttonHeight;
+
 			const x = xx;
 			this.buttonsCoords.push(vec2(x, x + w));
 			xx += w + spaceBetweenButtons;
@@ -39,13 +55,28 @@ export class ButtonRow {
 
 	render() {
 		this.buttons.forEach((button, idx) => {
-			buttonRenderer.render(
-				this.buttonsCoords[idx].x + this.px,
-				this.py,
-				button.title,
-				this.hoveredButton === idx,
-				this.pressedButton === idx,
-			);
+
+			const isActive = button.isSelected && button.isSelected();
+
+			if ('title' in button) {
+				buttonRenderer.renderWithText(
+					this.buttonsCoords[idx].x + this.px,
+					this.py,
+					button.title,
+					isActive || this.hoveredButton === idx,
+					this.pressedButton === idx,
+				);
+			} else if ('sprite' in button) {
+				buttonRenderer.renderWithIcon(
+					this.buttonsCoords[idx].x + this.px,
+					this.py,
+					button.sprite,
+					button.tag,
+					isActive || this.hoveredButton === idx,
+					this.pressedButton === idx,
+				);
+			}
+
 		});
 	}
 
@@ -108,15 +139,12 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		return w + 2 * u;
 	}
 
-	render(
+	renderCommon(
 		x: number, y: number,
-		text: string,
+		w: number,
 		hovered: boolean,
 		pressed: boolean,
 	) {
-
-		const w = this.getButtonWidth(text) - 2 * u;
-
 		const [r1, r2, r3] = this.textureMap.getRects(
 			hovered
 				? (pressed ? 'Pressed' : 'Hovered')
@@ -138,7 +166,29 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		texturedShader.setTexturePosition(r3);
 		texturedShader.setVec2('textureScale', vec2(1, 1));
 		texturedShader.draw(vec2(x + 6 + w, y), vec2(6, buttonHeight));
+	}
 
+	renderWithIcon(
+		x: number, y: number,
+		texture: TextureMap,
+		tag: string,
+		hovered: boolean,
+		pressed: boolean,
+	) {
+		this.renderCommon(x, y, buttonHeight - 2 * u, hovered, pressed);
+		texturedShader.setSprite(texture, tag);
+		texturedShader.draw(vec2(x, y), vec2(buttonHeight, buttonHeight));
+	}
+
+	renderWithText(
+		x: number, y: number,
+		text: string,
+		hovered: boolean,
+		pressed: boolean,
+	) {
+
+		const w = this.getButtonWidth(text) - 2 * u;
+		this.renderCommon(x, y, w, hovered, pressed);
 		const b = [237, 180, 122, 255].map(r => r / 255) as Vec4;
 		const c = [255, 240, 200, 255].map(r => r / 255) as Vec4;
 
