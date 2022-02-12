@@ -1,6 +1,6 @@
 import {Loadable} from './utils/loadable';
 import {Destroyable} from './utils/destroyable';
-import {HorizontalAlign, FontStyle, ShadowStyle, Text, VerticalAlign} from './fontRenderer';
+import {HorizontalAlign, FontStyle, ShadowStyle, Paragraph, VerticalAlign, Text} from './fontRenderer';
 import {buttonRenderer, defaultRect, fontRenderer, textboxRenderer, texturedShader} from '../sharedResources';
 import {TextureMap} from './textureMap';
 import {Mat4, vec2, Vec2, vec4, Vec4} from './utils/vector';
@@ -57,7 +57,7 @@ export class ButtonRow {
 				const x = this.px + coords.y;
 				textboxRenderer.renderTextBox(
 					x, this.py,
-					Math.min(200, fw / 2 - x - 2 * u),
+					Math.min(100, fw / 2 - x - 2 * u),
 					button.tooltip,
 					VerticalAlign.BOTTOM,
 					HorizontalAlign.LEFT

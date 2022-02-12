@@ -5,6 +5,7 @@ import {Bimap} from '../render/utils/bimap';
 import {getSkewXmatrix, scale} from '../render/utils/matrices';
 import {multiplyMatToVec, vec3} from '../render/utils/vector';
 import {TurnQueue} from './TurnQueue';
+import {meleeAttack, Spell} from './spell';
 
 
 class AbstractCharacterState {
@@ -79,6 +80,7 @@ export class GameField {
 				5,
 				400,
 				11,
+				[meleeAttack]
 			),
 			this.graph[1]
 		);
@@ -89,7 +91,8 @@ export class GameField {
 				5,
 				5,
 				400,
-				0
+				0,
+				[meleeAttack]
 			),
 			this.graph[2]
 		);
@@ -100,7 +103,8 @@ export class GameField {
 				5,
 				5,
 				400,
-				-4
+				-4,
+				[meleeAttack]
 			),
 			this.graph[3]
 		);
@@ -226,5 +230,9 @@ export class GameField {
 		const activeChar = this.turnQueue.getCurrentCharacter();
 		activeChar.movePoints = activeChar.movePointsPerTurn;
 		this.turnQueue.startNextTurn();
+	}
+
+	cast(from: Character, spell: Spell, to: FieldNode) {
+		//
 	}
 }

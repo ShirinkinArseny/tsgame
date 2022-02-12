@@ -4,17 +4,78 @@ import {BorderedShape} from '../shapes/borderedShape';
 import {FieldNode} from '../../logic/field/fieldNode';
 import {identity, ortho, reverse} from '../utils/matrices';
 import {isPointInConvexShape} from '../utils/geom';
-import {buildText, FontStyle, HorizontalAlign, ShadowStyle} from '../fontRenderer';
+import {Column, FontStyle, HorizontalAlign, Paragraph, ShadowStyle, Table, Text, Word} from '../fontRenderer';
 import {hpbar} from './hpbar';
 import {Character} from '../../logic/character';
 import {error} from '../utils/errors';
 import {coloredShader, fontRenderer, frameRenderer, panelRenderer, texturedShader} from '../../sharedResources';
 import {TextureMap} from '../textureMap';
 import {Mat4, Vec2, vec2, Vec4, vec4} from '../utils/vector';
-import {PointerEvent} from '../../events';
+import {PointerButton, PointerEvent} from '../../events';
 import {ButtonRow} from '../buttonRenderer';
 import {fh, fw} from '../../globalContext';
 import {limit} from '../utils/string';
+import {Colors} from '../utils/colors';
+
+const lipsum = 'Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s.'.split(' ').map(w => new Word(
+	w,
+	Colors.BLACK,
+	FontStyle.SMALL
+));
+
+const cells = [
+	['🔪', ' Damage', ':', '10'],
+	['🏹', ' Range', ':', '2'],
+	['📏', ' Radius', ':', '123']
+].map(line => line.map((w, idx) =>
+	new Paragraph(
+		[new Word(
+			w,
+			Colors.BLACK,
+			(idx === 1) ? FontStyle.BOLD : FontStyle.SMALL
+		)],
+		idx === 3 ? HorizontalAlign.RIGHT : idx === 2 ? HorizontalAlign.CENTER : HorizontalAlign.LEFT,
+		0
+	)
+));
+
+const text = new Text(
+	[
+		new Paragraph(
+			[
+				new Word(
+					'Domestic animals',
+					Colors.BLACK,
+					FontStyle.BOLD,
+				)
+			],
+			HorizontalAlign.LEFT
+		),
+		new Paragraph(
+			lipsum,
+			HorizontalAlign.LEFT,
+			5
+		),
+		new Table(
+			cells,
+			[
+				new Column(false),
+				new Column(false),
+				new Column(true),
+				new Column(false),
+			],
+			8
+		),
+		new Paragraph(
+			[new Word(
+				'(Only for rangers)',
+				Colors.RED,
+				FontStyle.SMALL
+			)],
+			HorizontalAlign.CENTER
+		),
+	]
+);
 
 export class GameFieldScene implements Scene {
 
@@ -27,7 +88,6 @@ export class GameFieldScene implements Scene {
 	giraffe = new TextureMap('characters/giraffe/giraffe');
 	bus = new TextureMap('characters/bus/bus');
 	portraits = new TextureMap('characters/portraits/portraits');
-	icons = new TextureMap('ui/icons/icons');
 	background = new TextureMap('levels/playground/playground');
 	pointer: Vec4 = vec4();
 	selectedCharacter: Character | undefined;
@@ -40,28 +100,28 @@ export class GameFieldScene implements Scene {
 					console.log('AAA');
 					this.gameField.startNextTurn();
 				},
-				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.', FontStyle.SMALL)
+				tooltip: text
 			},
 			{
 				title: 'Stats',
 				onClick: () => {
 					console.log('BBB');
 				},
-				tooltip: buildText('Lorem ipsum dolor sit amet', FontStyle.SMALL)
+				tooltip: text
 			},
 			{
 				title: 'Map',
 				onClick: () => {
 					console.log('CCC');
 				},
-				tooltip: buildText('В лесу родилась ёлочка,\nв лесу она росла,\nзимой и летом стройная\nзелёная была.', FontStyle.SMALL)
+				tooltip: text
 			},
 			{
 				title: 'Menu',
 				onClick: () => {
 					console.log('DDD');
 				},
-				tooltip: buildText('Go to main menu', FontStyle.SMALL)
+				tooltip: text
 			}
 		],
 		-fw / 2 + 170,
@@ -74,21 +134,21 @@ export class GameFieldScene implements Scene {
 				onClick: () => {
 					console.log('AAA');
 				},
-				tooltip: buildText('Hello world!', FontStyle.SMALL)
+				tooltip: text
 			},
 			{
 				title: 'Move',
 				onClick: () => {
 					console.log('BBB');
 				},
-				tooltip: buildText('Lorem ipsum dolor sit amet', FontStyle.SMALL)
+				tooltip: text
 			},
 			{
 				title: 'Surrender',
 				onClick: () => {
 					console.log('CCC');
 				},
-				tooltip: buildText('Hello world!', FontStyle.SMALL)
+				tooltip: text
 			},
 		],
 		-fw / 2 + 170,
@@ -125,7 +185,6 @@ export class GameFieldScene implements Scene {
 			this.spacedude.load(),
 			this.giraffe.load(),
 			this.bus.load(),
-			this.icons.load(),
 			this.portraits.load(),
 			this.background.load()
 		]);
@@ -135,7 +194,8 @@ export class GameFieldScene implements Scene {
 		Array.of(...this.nodeToShapeMap.values()).forEach(v => v.destroy());
 		this.spacedude.destroy();
 		this.giraffe.destroy();
-		this.icons.destroy();
+		this.bus.destroy();
+		this.portraits.destroy();
 		this.background.destroy();
 	}
 
@@ -197,8 +257,6 @@ export class GameFieldScene implements Scene {
 		this.drawCharacters();
 		this.drawQueue();
 		this.drawUI();
-
-		this.drawCursor();
 		this.drawFpsCounter();
 	}
 
@@ -354,35 +412,6 @@ export class GameFieldScene implements Scene {
 		});
 	}
 
-	private drawCursor() {
-		let iconAction: string | undefined;
-		iconAction = 'Pointer';
-		if (
-			this.buttonsRow1.isButtonHovered() || this.buttonsRow2.isButtonHovered()
-		) {
-			iconAction = 'Hand';
-		} else if (
-			this.hoveredCharacter() &&
-			this.selectedCharacter !== this.hoveredCharacter()
-		) {
-			iconAction = 'Select';
-		} else if (
-			this.selectedCharacter &&
-			this.selectedCharacter.movePoints > 0 &&
-			this.turnedNode() === this.selectedNode() &&
-			this.gameField.getCharacterState(this.selectedCharacter) instanceof CharacterCalmState
-		) {
-			iconAction = 'Move';
-		}
-
-		texturedShader.useProgram();
-		texturedShader.setSprite(this.icons, iconAction);
-		texturedShader.draw(vec2(
-			this.pointer.x - 16,
-			this.pointer.y - 16
-		).round(), vec2(32, 32));
-	}
-
 	private drawUI() {
 		this.drawBottomPanel();
 		this.drawQueue();
@@ -482,12 +511,24 @@ export class GameFieldScene implements Scene {
 		this.pointer = cursor.times(this.screenToPx);
 		this.hoveredNode = this.gameField.getNodes().find((node) =>
 			isPointInConvexShape(this.pointer.xy, node.points));
-		if (!pointerEvent.cancelled && pointerEvent.isCursorClicked) {
+		if (pointerEvent.cancelled) return;
+
+		if (pointerEvent.isCursorClicked) {
 			const newSelectedCharacter = this.gameField.getCharacterAt(this.hoveredNode);
-			if (!newSelectedCharacter && this.selectedCharacter && this.hoveredNode) {
-				this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
-			} else {
+			if (pointerEvent.button === PointerButton.LEFT) {
 				this.selectedCharacter = newSelectedCharacter;
+			} else if (pointerEvent.button === PointerButton.RIGHT) {
+				if (this.selectedCharacter && this.hoveredNode) {
+					if (!newSelectedCharacter) {
+						this.gameField.moveCharacter(this.selectedCharacter, this.hoveredNode);
+					} else {
+						this.gameField.cast(
+							this.selectedCharacter,
+							this.selectedCharacter.spells[0],
+							this.hoveredNode
+						);
+					}
+				}
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 import {error} from './render/utils/errors';
 
-type Bounds = [number, number, number, number]
+type Bounds = [number, number, number, number, number]
 
 export function splitImage(image: HTMLImageElement): [number, Bounds[][]] {
 
@@ -50,7 +50,7 @@ export function splitImage(image: HTMLImageElement): [number, Bounds[][]] {
 			throw new Error('WTF?');
 		}
 
-		return [minx, maxx, miny, maxy];
+		return [minx, maxx, miny, maxy, maxy - miny];
 	}
 
 	const bounds: Bounds[] = [];
@@ -112,6 +112,7 @@ export function splitImage(image: HTMLImageElement): [number, Bounds[][]] {
 					Math.max(prev[1], curr[1]),
 					Math.min(prev[2], curr[2]),
 					Math.max(prev[3], curr[3]),
+					curr[4],
 				];
 			}
 			i++;

@@ -64,7 +64,7 @@ const render = () => {
 
 	const rawWidth = window.innerWidth;
 	const rawHeight = window.innerHeight;
-	pxPerPx = Math.min(Math.floor(rawWidth / fw), Math.floor(rawHeight / fh));
+	pxPerPx = Math.min(rawWidth / fw,rawHeight / fh);
 	const canvasWidth = pxPerPx * fw;
 	const canvasHeight = pxPerPx * fh;
 	if (canvas.width != canvasWidth ||

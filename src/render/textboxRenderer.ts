@@ -16,29 +16,21 @@ export class TextboxRenderer implements Loadable, Destroyable {
 		horizontalAlign: HorizontalAlign = HorizontalAlign.LEFT
 	) {
 
-		const lh = fontRenderer.lineHeight - 4;
 		const u = 8;
 
-		const positions = fontRenderer.getTextPositions(
+		const positions = fontRenderer.getTextElementsPositions(
 			text,
 			w,
-			lh
 		);
-		const ww = positions
-			.map(({x, z}) => x + z)
-			.reduce((a, b) => Math.max(a, b), 0);
-		const hh = positions
-			.map(({y}) => y)
-			.reduce((a, b) => Math.max(a, b), 0) + fontRenderer.lineHeight;
 
 		const xx = Math.floor((() => {
 			switch (horizontalAlign) {
 			case HorizontalAlign.LEFT:
 				return x;
 			case HorizontalAlign.RIGHT:
-				return x - ww - u * 2;
+				return x - positions.width - u * 2;
 			case HorizontalAlign.CENTER:
-				return x - (ww + u) / 2;
+				return x - (positions.width + u) / 2;
 			}
 		})());
 		const yy = Math.floor((() => {
@@ -46,18 +38,18 @@ export class TextboxRenderer implements Loadable, Destroyable {
 			case VerticalAlign.TOP:
 				return y;
 			case VerticalAlign.BOTTOM:
-				return y - hh - u * 2;
+				return y - positions.height - u * 2;
 			}
 		})());
 
-		this.frameRenderer.renderFrame(xx, yy, ww, hh);
+		this.frameRenderer.renderFrame(xx, yy, positions.width, positions.height);
 
-		fontRenderer.drawText(
+		fontRenderer.drawTextImpl(
 			text,
 			xx + u,
 			yy + u,
 			w,
-			lh
+			positions
 		);
 
 	}

@@ -1,3 +1,5 @@
+import {Spell} from './spell';
+
 export class Character {
 
 	public movePoints: number = this.movePointsPerTurn;
@@ -9,7 +11,8 @@ export class Character {
 		public readonly movePointsPerTurn: number,
 		public readonly maxHp: number,
 		public readonly moveTime: number,
-		public readonly initiative: number
+		public readonly initiative: number,
+		public readonly spells: Array<Spell>
 	) {
 	}
 
