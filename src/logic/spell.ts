@@ -11,16 +11,16 @@ export type Spell = {
 		field: GameField,
 		author: Character,
 	) => void;
-	getAllowedNodes: (
+	getAllowedNodes?: (
 		field: GameField,
 		author: Character,
 	) => Array<FieldNode>;
-	getAffectedNodes: (
+	getAffectedNodes?: (
 		field: GameField,
 		author: Character,
 		target: FieldNode
 	) => Array<FieldNode>;
-	castEffectWithTarget: (
+	castEffectWithTarget?: (
 		field: GameField,
 		author: Character,
 		target: FieldNode
@@ -33,16 +33,7 @@ export const endTurn: Spell = {
 		words: 'Let the next character act'.split(' ')
 	}],
 	isAllowed: (field, author) => true,
-	getAllowedNodes: (field, author) => {
-		return [];
-	},
-	getAffectedNodes: (field, author, target) => {
-		return [];
-	},
 	castEffectWithoutTarget: (field) => {
-		field.startNextTurn();
-	},
-	castEffectWithTarget: (field) => {
 		field.startNextTurn();
 	}
 };
@@ -98,8 +89,47 @@ export const meleeAttack: Spell = {
 	}
 };
 
+export const bomb: Spell = {
+	title: 'Bomb',
+	description: [{
+		words: 'DROP DA BOMB DROP DA BOMB DROP DA BOBM'.split(' ')
+	}],
+	isAllowed: (field, author) => true,
+	getAllowedNodes: (field, author) => {
+		return field.getCircleArea(
+			field.getCharacterState(author).node,
+			5,
+			true
+		);
+	},
+	getAffectedNodes: (field, author, target) => {
+		return field.getCircleArea(
+			target,
+			2,
+			true
+		);
+	},
+	castEffectWithTarget: (field, author, target) => {
+		//
+	}
+};
+
+
+export const heal: Spell = {
+	title: 'Heal',
+	description: [{
+		words: 'Will heal character'.split(' ')
+	}],
+	isAllowed: (field, author) => true,
+	castEffectWithoutTarget: (field, author) => {
+		//
+	}
+};
+
 export const spells = [
 	endTurn,
 	move,
-	meleeAttack
+	meleeAttack,
+	bomb,
+	heal
 ];

@@ -90,16 +90,16 @@ export class GameFieldScene implements Scene {
 	buttonsRow1 = new ButtonRow(
 		[
 			{
-				title: 'End turn',
+				title: 'Inventory',
 				onClick: () => {
-					console.log('AAA');
+					console.log('BBB');
 				},
 				tooltip: text
 			},
 			{
-				title: 'Stats',
+				title: 'Spellbook',
 				onClick: () => {
-					console.log('BBB');
+					console.log('CCC');
 				},
 				tooltip: text
 			},
@@ -111,7 +111,7 @@ export class GameFieldScene implements Scene {
 				tooltip: text
 			},
 			{
-				title: 'Menu',
+				title: 'Log',
 				onClick: () => {
 					console.log('DDD');
 				},
@@ -320,7 +320,8 @@ export class GameFieldScene implements Scene {
 		const isNodeInAllowedArea = new Map<FieldNode, boolean>();
 		if (
 			this.selectedSpell &&
-			this.selectedCharacter
+			this.selectedCharacter &&
+			this.selectedSpell.getAllowedNodes
 		) {
 			this.selectedSpell.getAllowedNodes(
 				this.gameField,
@@ -333,7 +334,8 @@ export class GameFieldScene implements Scene {
 			this.selectedSpell &&
 			this.selectedCharacter &&
 			this.hoveredNode &&
-			isNodeInAllowedArea.get(this.hoveredNode)
+			isNodeInAllowedArea.get(this.hoveredNode) &&
+			this.selectedSpell.getAffectedNodes
 		) {
 			this.selectedSpell.getAffectedNodes(
 				this.gameField,
@@ -541,7 +543,8 @@ export class GameFieldScene implements Scene {
 					this.selectedSpell.isAllowed(
 						this.gameField,
 						this.selectedCharacter
-					)
+					) &&
+					this.selectedSpell.castEffectWithTarget
 				) {
 					this.selectedSpell.castEffectWithTarget(
 						this.gameField,
