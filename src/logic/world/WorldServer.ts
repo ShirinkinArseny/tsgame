@@ -8,7 +8,7 @@ import {getSpellByTitle, meleeAttack, Spell} from '../spells/Spell';
 import {ServerSocket, Socket} from './Socket';
 import {uuid} from '../../render/utils/ID';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
-
+import {teams} from '../../constants';
 
 export class WorldServer extends WorldCommon {
 
@@ -17,6 +17,7 @@ export class WorldServer extends WorldCommon {
 	protected readonly charactersMotions: Map<Character, CharacterMotion>;
 	protected readonly turnQueue: Character[] = [];
 	private readonly isPlayerAuthed = new Map<Socket, boolean>();
+	private readonly socketToTeam = new Map<Socket, string>();
 
 	constructor(
 		sockets: ServerSocket,
@@ -41,48 +42,60 @@ export class WorldServer extends WorldCommon {
 		this.charactersMotions = new Map<Character, CharacterMotion>();
 		this.characters = new Bimap<Character, FieldNode>();
 		this.characters.set(
-			new Character(
-				uuid(),
-				'Jeff',
-				'spacedude',
-				5,
-				5,
-				5,
-				400,
-				11,
-				[meleeAttack]
-			),
+			{
+				id: uuid(),
+				name: 'Jeff',
+				type: 'spacedude',
+				movePointsPerTurn: 5,
+				actionPointsPerTurn: 5,
+				maxHp: 5,
+				moveTime: 400,
+				initiative: 11,
+				spells: [meleeAttack],
+				team: teams.enemy,
+				movePoints: 5,
+				actionPoints: 5,
+				hp: 5,
+			},
 			this.graph[1]
 		);
 		this.characters.set(
-			new Character(
-				uuid(),
-				'<-XxX-[PRO.DeaШoN]-XxX->',
-				'bus',
-				5,
-				5,
-				5,
-				400,
-				0,
-				[meleeAttack]
-			),
+			{
+				id: uuid(),
+				name: '<-XxX-[PRO.DeaШoN]-XxX->',
+				type: 'bus',
+				movePointsPerTurn: 5,
+				actionPointsPerTurn: 5,
+				maxHp: 5,
+				moveTime: 400,
+				initiative: 0,
+				spells: [meleeAttack],
+				team: teams.ally,
+				movePoints: 5,
+				actionPoints: 5,
+				hp: 5,
+			},
 			this.graph[2]
 		);
 		this.characters.set(
-			new Character(
-				uuid(),
-				'Вася',
-				'giraffe',
-				5,
-				5,
-				5,
-				400,
-				-4,
-				[meleeAttack]
-			),
+			{
+				id: uuid(),
+				name: 'Вася',
+				type: 'giraffe',
+				movePointsPerTurn: 5,
+				actionPointsPerTurn: 5,
+				maxHp: 5,
+				moveTime: 400,
+				initiative: -4,
+				spells: [meleeAttack],
+				team: teams.ally,
+				movePoints: 5,
+				actionPoints: 5,
+				hp: 5,
+			},
 			this.graph[3]
 		);
-		this.turnQueue = this.characters.map((a) => a);
+		this.turnQueue = this.characters.map(a => a);
 		this.turnQueue.sort((a, b) => a.initiative - b.initiative);
 		const handleMessage = (socket: Socket, message: any) => {
 			this.handleMessage(socket, message);
@@ -151,7 +164,9 @@ export class WorldServer extends WorldCommon {
 	private authPlayer = (socket: Socket, msg: any) => {
 		if (msg.password === this.password) {
 			this.isPlayerAuthed.set(socket, true);
+			this.socketToTeam.set(socket, msg.team);
 			this.sendPlayerWorldState(socket);
+
 		} else {
 			socket.drop();
 		}
@@ -161,6 +176,11 @@ export class WorldServer extends WorldCommon {
 		const spell = getSpellByTitle(message.spell as string);
 		const targetId = message.target as (string | undefined);
 		const target = targetId ? this.getNodeById(targetId) : undefined;
+		if (this.socketToTeam.get(socket) !== this.turnQueue[0].team) {
+			return;
+		}
+
+
 		if (this.isCastingSpellAllowed(spell, target)) {
 			const author = this.turnQueue[0];
 			this.forAllPlayers(s => this.sendCastedSpell(
@@ -224,6 +244,7 @@ export class WorldServer extends WorldCommon {
 	}
 
 	startNextTurn() {
+
 		const activeChar = this.turnQueue[0];
 		activeChar.movePoints = activeChar.movePointsPerTurn;
 		this.turnQueue.splice(0, 1);

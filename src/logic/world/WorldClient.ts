@@ -6,11 +6,13 @@ import {Bimap} from '../../render/utils/Bimap';
 import {error} from '../../render/utils/Errors';
 import {getSpellByTitle, Spell} from '../spells/Spell';
 
+
 export type SpellListener = (
 	spell: Spell,
 	author: Character,
 	target: FieldNode | undefined
 ) => void
+export type QueueListener = (character: Character) => void
 
 export class WorldClient extends WorldCommon {
 
@@ -20,14 +22,20 @@ export class WorldClient extends WorldCommon {
 	protected readonly turnQueue: Character[] = [];
 	private readonly charIdToChar = new Map<string, Character>();
 	private readonly spellListeners: SpellListener[] = [];
+	private readonly queueListeners: QueueListener[] = [];
 
 	addSpellListener(listener: SpellListener) {
 		this.spellListeners.push(listener);
 	}
 
+	addQueueListener(listener: QueueListener) {
+		this.queueListeners.push(listener);
+	}
+
 	constructor(
 		private socket: Socket,
-		password: string
+		password: string,
+		team: string,
 	) {
 		super();
 		socket.onReceiveJson(obj => {
@@ -38,7 +46,7 @@ export class WorldClient extends WorldCommon {
 				this.handleUpdateCharacters(obj);
 			}
 			if (obj.action === 'update-turn-queue') {
-				this.updateTurnQueue(obj);
+				this.handleUpdateTurnQueue(obj);
 			}
 			if (obj.action === 'show-casted-spell') {
 				this.handleShowCastedSpell(obj);
@@ -46,7 +54,8 @@ export class WorldClient extends WorldCommon {
 		});
 		socket.sendJson({
 			action: 'hello from client',
-			password: password
+			team: team,
+			password: password,
 		});
 	}
 
@@ -85,13 +94,17 @@ export class WorldClient extends WorldCommon {
 		});
 	}
 
-	private updateTurnQueue(msg: any) {
+	private handleUpdateTurnQueue(msg: any) {
 		this.turnQueue.splice(0, this.turnQueue.length);
 		this.turnQueue.push(
 			...(msg.queue as string[]).map(id =>
 				this.charIdToChar.get(id) || error('No character with id=' + id)
 			)
 		);
+
+		this.queueListeners.forEach(queueListener => queueListener(
+			this.turnQueue[0]
+		));
 	}
 
 	castSpell(

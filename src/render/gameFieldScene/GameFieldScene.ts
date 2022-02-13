@@ -18,6 +18,8 @@ import {Spell, spells} from '../../logic/spells/Spell';
 import {range} from '../utils/Lists';
 import {WorldClient} from '../../logic/world/WorldClient';
 import {CharacterCalmState} from '../../logic/world/CharacterState';
+import {teams} from '../../constants';
+
 
 const text: Text = [
 	{
@@ -468,7 +470,8 @@ export class GameFieldScene implements Scene {
 		panelRenderer.render();
 
 		this.buttonsRow1.render();
-		if (this.selectedCharacter === this.turnedCharacter()) {
+		if (this.selectedCharacter && this.selectedCharacter === this.turnedCharacter() && this.selectedCharacter.team === teams.ally) {
+
 			this.buttonsRow2.render();
 		}
 
