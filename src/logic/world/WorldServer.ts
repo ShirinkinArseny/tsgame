@@ -4,7 +4,7 @@ import {Character, serializeCharacter} from '../Character';
 import {Bimap} from '../../render/utils/Bimap';
 import {getSkewXmatrix, scale} from '../../render/utils/Matrices';
 import {multiplyMatToVec, vec3} from '../../render/utils/Vector';
-import {getSpellByTitle, meleeAttack, Spell} from '../Spell';
+import {getSpellByTitle, meleeAttack, Spell} from '../spells/Spell';
 import {ServerSocket, Socket} from './Socket';
 import {uuid} from '../../render/utils/ID';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
@@ -15,9 +15,8 @@ export class WorldServer extends WorldCommon {
 	protected readonly graph: Array<FieldNode>;
 	protected readonly characters: Bimap<Character, FieldNode>;
 	protected readonly charactersMotions: Map<Character, CharacterMotion>;
-
+	protected readonly turnQueue: Character[] = [];
 	private readonly isPlayerAuthed = new Map<Socket, boolean>();
-	private readonly turnQueue: Character[] = [];
 
 	constructor(
 		sockets: ServerSocket,
@@ -162,24 +161,26 @@ export class WorldServer extends WorldCommon {
 		const spell = getSpellByTitle(message.spell as string);
 		const targetId = message.target as (string | undefined);
 		const target = targetId ? this.getNodeById(targetId) : undefined;
-		const author = this.turnQueue[0];
-		this.forAllPlayers(s => this.sendCastedSpell(
-			s,
-			spell,
-			author,
-			target
-		));
-		if (target) {
-			spell.castEffectWithTarget && spell.castEffectWithTarget(
-				this,
+		if (this.isCastingSpellAllowed(spell, target)) {
+			const author = this.turnQueue[0];
+			this.forAllPlayers(s => this.sendCastedSpell(
+				s,
+				spell,
 				author,
 				target
-			);
-		} else {
-			spell.castEffectWithoutTarget && spell.castEffectWithoutTarget(
-				this,
-				author,
-			);
+			));
+			if (target) {
+				spell.castEffectWithTarget && spell.castEffectWithTarget(
+					this,
+					author,
+					target
+				);
+			} else {
+				spell.castEffectWithoutTarget && spell.castEffectWithoutTarget(
+					this,
+					author,
+				);
+			}
 		}
 	};
 
@@ -206,12 +207,20 @@ export class WorldServer extends WorldCommon {
 			const node = this.getNodeById(
 				motion.path[motion.path.length - 1]
 			);
-			console.log('p: ' + path);
 			this.charactersMotions.delete(character);
 			this.characters.removeA(character);
 			this.characters.set(character, node);
 			this.forAllPlayers(this.sendUpdateCharacters);
 		}, (path.length - 1) * character.moveTime);
+	}
+
+	damage(
+		value: [Character, number][]
+	) {
+		value.forEach(([char, damage]) => {
+			char.hp -= damage;
+		});
+		this.forAllPlayers(this.sendUpdateCharacters);
 	}
 
 	startNextTurn() {

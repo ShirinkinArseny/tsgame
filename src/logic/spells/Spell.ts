@@ -1,10 +1,10 @@
-import {Character} from './Character';
-import {FieldNode} from './field/FieldNode';
-import {Text} from '../render/FontRenderer';
-import {WorldCommon} from './world/WorldCommon';
-import {WorldServer} from './world/WorldServer';
-import {error} from '../render/utils/Errors';
-import {WorldClient} from './world/WorldClient';
+import {Character} from '../Character';
+import {FieldNode} from '../field/FieldNode';
+import {Text} from '../../render/FontRenderer';
+import {WorldCommon} from '../world/WorldCommon';
+import {WorldServer} from '../world/WorldServer';
+import {error} from '../../render/utils/Errors';
+import {WorldClient} from '../world/WorldClient';
 
 export type Spell = {
 	title: string;
@@ -116,6 +116,17 @@ export const bomb: Spell = {
 		);
 	},
 	castEffectWithTarget: (world, author, target: FieldNode) => {
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore
+		const affectedNodes = bomb.getAffectedNodes(world, author, target);
+		const damage: [Character, number][] = [];
+		affectedNodes.forEach(n => {
+			const c = world.getCharacterAt(n);
+			if (c) {
+				damage.push([c, 1.2]);
+			}
+		});
+		world.damage(damage);
 	},
 	draw: (world, author, target, castVisualEffect) => {
 		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -136,6 +147,7 @@ export const heal: Spell = {
 	}],
 	isAllowed: () => true,
 	castEffectWithoutTarget: (world, author) => {
+		//
 	},
 	draw: (world, author, target, castVisualEffect) => {
 		castVisualEffect(world.getCharacterState(author).node, 'Heal');
@@ -152,6 +164,13 @@ export const teleport: Spell = {
 		world,
 		author
 	) => author.actionPoints > 2,
+	getAllowedNodes: (world, author) => {
+		return world.getCircleArea(
+			world.getCharacterState(author).node,
+			7
+		);
+	},
+	getAffectedNodes: (world, author, target) => [target],
 	castEffectWithTarget: (world, author, target) => {
 		world.teleport(author, target);
 	},

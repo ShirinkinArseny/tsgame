@@ -1,4 +1,4 @@
-import {getSpellByTitle, Spell} from './Spell';
+import {getSpellByTitle, Spell} from './spells/Spell';
 
 export class Character {
 

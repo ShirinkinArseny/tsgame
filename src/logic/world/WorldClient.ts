@@ -4,7 +4,7 @@ import {deserializeNodes, FieldNode} from '../field/FieldNode';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
 import {Bimap} from '../../render/utils/Bimap';
 import {error} from '../../render/utils/Errors';
-import {getSpellByTitle, Spell} from '../Spell';
+import {getSpellByTitle, Spell} from '../spells/Spell';
 
 export type SpellListener = (
 	spell: Spell,
@@ -17,7 +17,7 @@ export class WorldClient extends WorldCommon {
 	protected readonly graph: Array<FieldNode> = [];
 	protected readonly characters: Bimap<Character, FieldNode> = new Bimap();
 	protected readonly charactersMotions: Map<Character, CharacterMotion> = new Map();
-	private turnQueue: Character[] = [];
+	protected readonly turnQueue: Character[] = [];
 	private readonly charIdToChar = new Map<string, Character>();
 	private readonly spellListeners: SpellListener[] = [];
 
@@ -86,8 +86,11 @@ export class WorldClient extends WorldCommon {
 	}
 
 	private updateTurnQueue(msg: any) {
-		this.turnQueue = (msg.queue as string[]).map(id =>
-			this.charIdToChar.get(id) || error('No character with id=' + id)
+		this.turnQueue.splice(0, this.turnQueue.length);
+		this.turnQueue.push(
+			...(msg.queue as string[]).map(id =>
+				this.charIdToChar.get(id) || error('No character with id=' + id)
+			)
 		);
 	}
 
@@ -95,14 +98,12 @@ export class WorldClient extends WorldCommon {
 		spell: Spell,
 		target: FieldNode | undefined = undefined
 	): void {
-		this.socket.sendJson({
-			action: 'cast spell',
-			spell: spell.title,
-			target: target?.id
-		});
-	}
-
-	getTurnQueue() {
-		return this.turnQueue;
+		if (this.isCastingSpellAllowed(spell, target)) {
+			this.socket.sendJson({
+				action: 'cast spell',
+				spell: spell.title,
+				target: target?.id
+			});
+		}
 	}
 }

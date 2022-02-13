@@ -3,6 +3,7 @@ import {Bimap} from '../../render/utils/Bimap';
 import {Character} from '../Character';
 import {error} from '../../render/utils/Errors';
 import {CharacterCalmState, CharacterMovingState, CharacterState} from './CharacterState';
+import {Spell} from '../spells/Spell';
 
 export type CharacterMotion = {
 	startedAt: number;
@@ -15,6 +16,7 @@ export abstract class WorldCommon {
 	protected readonly nodeIdToNode = new Map<string, FieldNode>();
 	protected abstract readonly characters: Bimap<Character, FieldNode>;
 	protected abstract readonly charactersMotions: Map<Character, CharacterMotion>;
+	protected abstract readonly turnQueue: Character[];
 
 	initNodes() {
 		this.graph.forEach(n => this.nodeIdToNode.set(n.id, n));
@@ -106,11 +108,24 @@ export abstract class WorldCommon {
 		return new CharacterCalmState(field);
 	}
 
+	isCastingSpellAllowed(
+		spell: Spell,
+		target: FieldNode | undefined
+	): boolean {
+		const author = this.turnQueue[0];
+		if (!spell.isAllowed(this, author)) return false;
+		if (spell.castEffectWithTarget && spell.getAllowedNodes) {
+			if (!target) return false;
+			const allowedArea = spell.getAllowedNodes(this, author);
+			if (!allowedArea.includes(target)) return false;
+		}
+		return true;
+	}
+
 	getCharacterAt(node: FieldNode | undefined): Character | undefined {
 		if (!node) return undefined;
 		return this.characters.getA(node);
 	}
-
 
 	getCharacters(): Character[] {
 		return this.characters.map(c => c);
@@ -118,6 +133,10 @@ export abstract class WorldCommon {
 
 	getNodes(): FieldNode[] {
 		return this.graph;
+	}
+
+	getTurnQueue() {
+		return this.turnQueue;
 	}
 
 }

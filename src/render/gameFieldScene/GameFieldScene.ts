@@ -14,7 +14,7 @@ import {ButtonRow} from '../ButtonRenderer';
 import {fh, fw} from '../../GlobalContext';
 import {limit} from '../utils/String';
 import {Colors} from '../utils/Colors';
-import {Spell, spells} from '../../logic/Spell';
+import {Spell, spells} from '../../logic/spells/Spell';
 import {range} from '../utils/Lists';
 import {WorldClient} from '../../logic/world/WorldClient';
 import {CharacterCalmState} from '../../logic/world/CharacterState';
