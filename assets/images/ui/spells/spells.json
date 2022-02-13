@@ -102,6 +102,14 @@
     "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 16 },
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
+   },
+   "spells 13.aseprite": {
+    "frame": { "x": 208, "y": 0, "w": 16, "h": 16 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 16, "h": 16 },
+    "sourceSize": { "w": 16, "h": 16 },
+    "duration": 100
    }
  },
  "meta": {
@@ -109,7 +117,7 @@
   "version": "1.3-beta11-x64",
   "image": "spells.png",
   "format": "RGBA8888",
-  "size": { "w": 208, "h": 16 },
+  "size": { "w": 224, "h": 16 },
   "scale": "1",
   "frameTags": [
    { "name": "Lamp", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
@@ -123,7 +131,8 @@
    { "name": "Kick", "from": 8, "to": 8, "direction": "forward", "color": "#000000ff" },
    { "name": "End Turn", "from": 9, "to": 9, "direction": "forward", "color": "#000000ff" },
    { "name": "Bomb", "from": 10, "to": 10, "direction": "forward", "color": "#000000ff" },
-   { "name": "Heal", "from": 11, "to": 11, "direction": "forward", "color": "#000000ff" }
+   { "name": "Heal", "from": 11, "to": 11, "direction": "forward", "color": "#000000ff" },
+   { "name": "Teleport", "from": 12, "to": 12, "direction": "forward", "color": "#000000ff" }
   ],
   "layers": [
    { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }

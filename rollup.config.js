@@ -1,7 +1,7 @@
 import sourcemaps from 'rollup-plugin-sourcemaps';
 
 export default {
-	input: 'build/ts/index.js',
+	input: 'build/ts/Index.js',
 	plugins: [sourcemaps()],
 	output: {
 		sourcemap: true,
