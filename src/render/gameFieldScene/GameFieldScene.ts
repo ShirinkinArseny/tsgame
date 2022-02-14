@@ -57,7 +57,7 @@ export class GameFieldScene implements Scene {
 			}));
 		},
 		-fw / 2 + 42,
-		fh / 2 - 12,
+		fh / 2 - 13,
 		this.effectIcons
 	);
 

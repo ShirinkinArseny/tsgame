@@ -1,5 +1,5 @@
 { "frames": {
-   "spells 0.aseprite": {
+   "spellIcons 0.aseprite": {
     "frame": { "x": 0, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -7,7 +7,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 1.aseprite": {
+   "spellIcons 1.aseprite": {
     "frame": { "x": 16, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -15,7 +15,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 2.aseprite": {
+   "spellIcons 2.aseprite": {
     "frame": { "x": 32, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -23,7 +23,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 3.aseprite": {
+   "spellIcons 3.aseprite": {
     "frame": { "x": 48, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -31,7 +31,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 4.aseprite": {
+   "spellIcons 4.aseprite": {
     "frame": { "x": 64, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -39,7 +39,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 5.aseprite": {
+   "spellIcons 5.aseprite": {
     "frame": { "x": 80, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -47,7 +47,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 6.aseprite": {
+   "spellIcons 6.aseprite": {
     "frame": { "x": 96, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -55,7 +55,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 7.aseprite": {
+   "spellIcons 7.aseprite": {
     "frame": { "x": 112, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -63,7 +63,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 8.aseprite": {
+   "spellIcons 8.aseprite": {
     "frame": { "x": 128, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -71,7 +71,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 9.aseprite": {
+   "spellIcons 9.aseprite": {
     "frame": { "x": 144, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -79,7 +79,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 10.aseprite": {
+   "spellIcons 10.aseprite": {
     "frame": { "x": 160, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -87,7 +87,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 11.aseprite": {
+   "spellIcons 11.aseprite": {
     "frame": { "x": 176, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -95,7 +95,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 12.aseprite": {
+   "spellIcons 12.aseprite": {
     "frame": { "x": 192, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -103,7 +103,7 @@
     "sourceSize": { "w": 16, "h": 16 },
     "duration": 100
    },
-   "spells 13.aseprite": {
+   "spellIcons 13.aseprite": {
     "frame": { "x": 208, "y": 0, "w": 16, "h": 16 },
     "rotated": false,
     "trimmed": false,
@@ -115,7 +115,7 @@
  "meta": {
   "app": "http://www.aseprite.org/",
   "version": "1.3-beta11-x64",
-  "image": "spells.png",
+  "image": "spellIcons.png",
   "format": "RGBA8888",
   "size": { "w": 224, "h": 16 },
   "scale": "1",

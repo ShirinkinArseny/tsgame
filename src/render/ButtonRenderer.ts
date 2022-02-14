@@ -86,8 +86,7 @@ export type TooltippedIcon = {
 	tooltip: Text
 }
 
-const tooltippedIconSize = 12;
-const tooltippedIconsSpaceBetween = 1;
+export const tooltippedIconSize = 12;
 
 export class TooltippedIcons extends TooltippedItemsRow {
 
@@ -103,7 +102,7 @@ export class TooltippedIcons extends TooltippedItemsRow {
 	getItems(): TooltippedHoverable[] {
 		return this.icons().map((icon, idx) => ({
 			position: vec2(
-				this.x + idx * (tooltippedIconSize + tooltippedIconsSpaceBetween),
+				this.x + idx * tooltippedIconSize,
 				this.y
 			),
 			width: tooltippedIconSize,
@@ -122,7 +121,7 @@ export class TooltippedIcons extends TooltippedItemsRow {
 				vec2(xx, this.y),
 				vec2(tooltippedIconSize, tooltippedIconSize)
 			);
-			xx += (tooltippedIconSize + tooltippedIconsSpaceBetween);
+			xx += tooltippedIconSize;
 		});
 	}
 

@@ -36,10 +36,10 @@ void main() {
     _textureCoord.y += r * r * gold_noise(_texturePosition01 * 31.0, seed + 0.1) * 0.01;
 
     vec2 _textureCoordR = _textureCoord;
-    _textureCoordR.x += 0.005 * r;
+    _textureCoordR.x += 0.003 * r;
 
     vec2 _textureCoordB = _textureCoord;
-    _textureCoordB.x -= 0.005 * r;
+    _textureCoordB.x -= 0.003 * r;
 
     vec4 pureColor = texture2D(texture, _textureCoord);
     vec4 pureColorR = texture2D(texture, _textureCoordR);
