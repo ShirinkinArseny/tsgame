@@ -39,7 +39,7 @@ const styledAlphabet = [
 ];
 
 const symbolicAlphabet = [
-	...'○◐●△◭▲📏🔪🏹',
+	...'○◐●△◭▲📏🔪🏹⏰',
 ];
 
 const alphabet = [
@@ -55,7 +55,7 @@ const alphabet = [
 	}))
 ];
 
-const spaceWidth = 4;
+const spaceWidth = 5;
 
 export type Word = string | {
 	word: string;
@@ -144,7 +144,9 @@ export class TableCellsPositions {
 	}
 
 	readonly width = this.cells[0].map(w => w.width).reduce((a, b) => a + b, 0);
-	readonly height = this.cells.map(w => w[0].height).reduce((a, b) => a + b, 0) + this.paddingBottom;
+	readonly height = this.cells.map(w => w[0].height).reduce((a, b) => a + b, 0) + (
+		this.paddingBottom !== undefined ? this.paddingBottom : defaultPaddingBottom
+	);
 }
 
 export type TextElementPosition = ParagraphWordsPositions | TableCellsPositions;
@@ -250,10 +252,13 @@ export class FontRenderer implements Destroyable, Loadable {
 		kerning = 1.0
 	): number {
 		return [...str].map(s => {
-			const ss = this.symbolRectangles.get(fontStyle)?.get(s);
-			if (!ss) return spaceWidth;
-			return ss[0];
-		}).reduce((a, b) => a + b + kerning, 0);
+			if (s === ' ') return spaceWidth;
+			const sss = this.getSymbol(s, fontStyle);
+			if (!sss) {
+				throw new Error('Unknown symbol: ' + s);
+			}
+			return sss[0];
+		}).reduce((a, b) => a + b + kerning, 0) - 1;
 	}
 
 	private doDrawString(
@@ -355,7 +360,7 @@ export class FontRenderer implements Destroyable, Loadable {
 		return new ParagraphWordsPositions(
 			lines,
 			maxxx,
-			yy + maxLineHeight + (text.paddingBottom || defaultPaddingBottom)
+			yy + maxLineHeight + (text.paddingBottom !== undefined ? text.paddingBottom : defaultPaddingBottom)
 		);
 	}
 
@@ -416,14 +421,14 @@ export class FontRenderer implements Destroyable, Loadable {
 			line.map(paragraph =>
 				paragraph.words.map(w => {
 					const {word, fontStyle} = destructWord(w);
-					return this.getStringWidth(word, fontStyle) + spaceWidth;
+					return this.getStringWidth(word, fontStyle);
 				}).reduce((a, b) => a + b, 0)
 			)
 		);
 		const columnsSizes = range(0, table.cells[0].length - 1).map(columnIdx => {
 			return range(0, table.cells.length - 1).map(rowIdx =>
 				stupidSizes[rowIdx][columnIdx]
-			).reduce((a, b) => Math.max(a, b), 0);
+			).reduce((a, b) => Math.max(a, b), 0) + 2;
 		});
 
 		const isColumnStretchable = (idx: number) => {
@@ -460,7 +465,7 @@ export class FontRenderer implements Destroyable, Loadable {
 				l.push(new TableCellPosition(
 					vec2(xx, yy),
 					cellWidth,
-					paragraphSize.height,
+					paragraphSize.height + (cell.paddingBottom !== undefined ? cell.paddingBottom : defaultPaddingBottom),
 					paragraphSize
 				));
 				maxCellHeight = Math.max(paragraphSize.height, maxCellHeight);
@@ -469,7 +474,7 @@ export class FontRenderer implements Destroyable, Loadable {
 			positions.push(l);
 			yy += maxCellHeight;
 		});
-		return new TableCellsPositions(positions, (table.paddingBottom || defaultPaddingBottom));
+		return new TableCellsPositions(positions, (table.paddingBottom !== undefined ? table.paddingBottom : defaultPaddingBottom));
 	}
 
 	drawTableImpl(

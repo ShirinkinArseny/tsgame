@@ -1,4 +1,4 @@
-import {getSpellByTitle, Spell} from './spells/Spell';
+import {getSpellByTitle, Spell} from './spells/_Spell';
 
 export type Character = {
 	id: string,

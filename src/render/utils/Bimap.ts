@@ -16,8 +16,8 @@ export class Bimap<A, B> {
 	}
 
 	set(a: A, b: B) {
-		this.removeA(a);
-		this.removeB(b);
+		this.deleteA(a);
+		this.deleteB(b);
 		this.aToB.set(a, b);
 		this.bToA.set(b, a);
 	}
@@ -32,7 +32,7 @@ export class Bimap<A, B> {
 		return res;
 	}
 
-	removeA(a: A) {
+	deleteA(a: A) {
 		const b = this.aToB.get(a);
 		this.aToB.delete(a);
 		if (b) {
@@ -40,7 +40,7 @@ export class Bimap<A, B> {
 		}
 	}
 
-	removeB(b: B) {
+	deleteB(b: B) {
 		const a = this.bToA.get(b);
 		this.bToA.delete(b);
 		if (a) {

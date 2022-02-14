@@ -4,7 +4,7 @@ import {deserializeNodes, FieldNode} from '../field/FieldNode';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
 import {Bimap} from '../../render/utils/Bimap';
 import {error} from '../../render/utils/Errors';
-import {getSpellByTitle, Spell} from '../spells/Spell';
+import {getSpellByTitle, Spell} from '../spells/_Spell';
 
 
 export type SpellListener = (
@@ -91,6 +91,13 @@ export class WorldClient extends WorldCommon {
 			if (motion) {
 				this.charactersMotions.set(character, motion);
 			}
+		});
+		const deadCharacters = this.characters.map(a => a).filter(a => a.hp <= 0);
+		deadCharacters.forEach(corpse => {
+			this.turnQueue.delete(corpse);
+			this.charactersMotions.delete(corpse);
+			this.characters.deleteA(corpse);
+			this.charIdToChar.delete(corpse.id);
 		});
 	}
 

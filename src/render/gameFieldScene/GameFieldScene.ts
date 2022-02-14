@@ -13,8 +13,7 @@ import {PointerButton, PointerEvent} from '../../Events';
 import {ButtonRow} from '../ButtonRenderer';
 import {fh, fw} from '../../GlobalContext';
 import {limit} from '../utils/String';
-import {Colors} from '../utils/Colors';
-import {Spell, spells} from '../../logic/spells/Spell';
+import {Spell, spells} from '../../logic/spells/_Spell';
 import {range} from '../utils/Lists';
 import {WorldClient} from '../../logic/world/WorldClient';
 import {CharacterCalmState} from '../../logic/world/CharacterState';
@@ -25,52 +24,11 @@ const text: Text = [
 	{
 		words: [
 			{
-				word: 'Domestic animals',
-				fontStyle: FontStyle.BOLD,
+				word: 'Do stuff',
+				fontStyle: FontStyle.SMALL,
 			}
 		]
 	},
-	{
-		words: 'Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s.'.split(' ').map(w => ({
-			word: w,
-			fontStyle: FontStyle.SMALL
-		})),
-		paddingBottom: 5
-	},
-	{
-		cells: [
-			['🔪', ' Damage', ':', '10'],
-			['🏹', ' Range', ':', '2'],
-			['📏', ' Radius', ':', '123']
-		].map(line => line.map((w, idx) => ({
-			type: 'paragraph',
-			words: [
-				{
-					word: w,
-					fontStyle: (idx === 1) ? FontStyle.BOLD : FontStyle.SMALL
-				}
-			],
-			align: idx === 3 ? HorizontalAlign.RIGHT : idx === 2 ? HorizontalAlign.CENTER : HorizontalAlign.LEFT,
-			paddingBottom: 0
-		}))),
-		columns: [
-			{allowStretch: false},
-			{allowStretch: false},
-			{allowStretch: true},
-			{allowStretch: false},
-		],
-		paddingBottom: 8
-	},
-	{
-		words: [
-			{
-				word: '(Only for rangers)',
-				color: Colors.RED,
-				fontStyle: FontStyle.SMALL
-			}
-		],
-		align: HorizontalAlign.CENTER
-	}
 ];
 
 export class GameFieldScene implements Scene {
@@ -147,7 +105,11 @@ export class GameFieldScene implements Scene {
 					}
 				},
 				tooltip: spell.description,
-				isSelected: () => this.selectedSpell === spell
+				isSelected: () => this.selectedSpell === spell,
+				isDisabled: () => !this.selectedCharacter || !spell.isAllowed(
+					this.world,
+					this.selectedCharacter
+				)
 			}))
 		,
 		-fw / 2 + 170,
@@ -519,7 +481,7 @@ export class GameFieldScene implements Scene {
 				x1, y1,
 			);
 			ren(
-				'steps: ' + selected.movePoints + '/' + selected.movePointsPerTurn,
+				'M/P: ' + selected.movePoints + '/' + selected.movePointsPerTurn,
 				x1, y2,
 			);
 			ren(
@@ -527,7 +489,7 @@ export class GameFieldScene implements Scene {
 				x2, y1,
 			);
 			ren(
-				'ipsum: 2/3',
+				'A/P: ' + selected.actionPoints + '/' + selected.actionPointsPerTurn,
 				x2, y2,
 			);
 		}
@@ -594,6 +556,7 @@ export class GameFieldScene implements Scene {
 						this.selectedSpell,
 						hoveredNode
 					);
+					this.selectedSpell = undefined;
 				}
 			}
 		}

@@ -47,7 +47,7 @@ class LocalSocket extends Socket {
 		//
 	}
 
-	onDrop(handle: () => void): void {
+	onDrop(): void {
 		//
 	}
 

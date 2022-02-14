@@ -4,11 +4,12 @@ import {Character, serializeCharacter} from '../Character';
 import {Bimap} from '../../render/utils/Bimap';
 import {getSkewXmatrix, scale} from '../../render/utils/Matrices';
 import {multiplyMatToVec, vec3} from '../../render/utils/Vector';
-import {getSpellByTitle, meleeAttack, Spell} from '../spells/Spell';
+import {getSpellByTitle, Spell} from '../spells/_Spell';
 import {ServerSocket, Socket} from './Socket';
 import {uuid} from '../../render/utils/ID';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
 import {teams} from '../../constants';
+import {kick} from '../spells/Kick';
 
 export class WorldServer extends WorldCommon {
 
@@ -18,6 +19,9 @@ export class WorldServer extends WorldCommon {
 	protected readonly turnQueue: Character[] = [];
 	private readonly isPlayerAuthed = new Map<Socket, boolean>();
 	private readonly socketToTeam = new Map<Socket, string>();
+
+	private readonly postSpellNotifyPlayers = new Set<(socket: Socket) => void>();
+	private readonly postSpellHousekeep = new Set<() => void>();
 
 	constructor(
 		sockets: ServerSocket,
@@ -51,7 +55,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: 11,
-				spells: [meleeAttack],
+				spells: [kick],
 				team: teams.enemy,
 				movePoints: 5,
 				actionPoints: 5,
@@ -69,7 +73,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: 0,
-				spells: [meleeAttack],
+				spells: [kick],
 				team: teams.ally,
 				movePoints: 5,
 				actionPoints: 5,
@@ -87,13 +91,67 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: -4,
-				spells: [meleeAttack],
+				spells: [kick],
 				team: teams.ally,
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
 			},
 			this.graph[3]
+		);
+		this.characters.set(
+			{
+				id: uuid(),
+				name: '(Copy) Jeff',
+				type: 'spacedude',
+				movePointsPerTurn: 5,
+				actionPointsPerTurn: 5,
+				maxHp: 5,
+				moveTime: 400,
+				initiative: 11,
+				spells: [kick],
+				team: teams.enemy,
+				movePoints: 5,
+				actionPoints: 5,
+				hp: 5,
+			},
+			this.graph[4]
+		);
+		this.characters.set(
+			{
+				id: uuid(),
+				name: '(Copy) <-XxX-[PRO.DeaШoN]-XxX->',
+				type: 'bus',
+				movePointsPerTurn: 5,
+				actionPointsPerTurn: 5,
+				maxHp: 5,
+				moveTime: 400,
+				initiative: 0,
+				spells: [kick],
+				team: teams.ally,
+				movePoints: 5,
+				actionPoints: 5,
+				hp: 5,
+			},
+			this.graph[5]
+		);
+		this.characters.set(
+			{
+				id: uuid(),
+				name: '(Copy) Вася',
+				type: 'giraffe',
+				movePointsPerTurn: 5,
+				actionPointsPerTurn: 5,
+				maxHp: 5,
+				moveTime: 400,
+				initiative: -4,
+				spells: [kick],
+				team: teams.ally,
+				movePoints: 5,
+				actionPoints: 5,
+				hp: 5,
+			},
+			this.graph[6]
 		);
 		this.turnQueue = this.characters.map(a => a);
 		this.turnQueue.sort((a, b) => a.initiative - b.initiative);
@@ -179,8 +237,6 @@ export class WorldServer extends WorldCommon {
 		if (this.socketToTeam.get(socket) !== this.turnQueue[0].team) {
 			return;
 		}
-
-
 		if (this.isCastingSpellAllowed(spell, target)) {
 			const author = this.turnQueue[0];
 			this.forAllPlayers(s => this.sendCastedSpell(
@@ -201,6 +257,12 @@ export class WorldServer extends WorldCommon {
 					author,
 				);
 			}
+			this.postSpellNotifyPlayers.forEach(action => {
+				this.forAllPlayers(action);
+			});
+			this.postSpellNotifyPlayers.clear();
+			this.postSpellHousekeep.forEach(action => action());
+			this.postSpellHousekeep.clear();
 		}
 	};
 
@@ -222,40 +284,54 @@ export class WorldServer extends WorldCommon {
 			path: path.map(n => n.id)
 		};
 		this.charactersMotions.set(character, motion);
-		this.forAllPlayers(this.sendUpdateCharacters);
+		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
 		setTimeout(() => {
 			const node = this.getNodeById(
 				motion.path[motion.path.length - 1]
 			);
 			this.charactersMotions.delete(character);
-			this.characters.removeA(character);
+			this.characters.deleteA(character);
 			this.characters.set(character, node);
 			this.forAllPlayers(this.sendUpdateCharacters);
 		}, (path.length - 1) * character.moveTime);
 	}
 
 	damage(
-		value: [Character, number][]
+		character: Character,
+		value: number
 	) {
-		value.forEach(([char, damage]) => {
-			char.hp -= damage;
-		});
-		this.forAllPlayers(this.sendUpdateCharacters);
+		character.hp -= value;
+		if (character.hp > character.maxHp) character.hp = character.maxHp;
+		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
+		this.postSpellHousekeep.add(this.killDeadCorpses);
 	}
 
-	startNextTurn() {
+	private killDeadCorpses = () => {
+		const deadCharacters = this.characters.map(a => a).filter(a => a.hp <= 0);
+		deadCharacters.forEach(corpse => {
+			this.turnQueue.delete(corpse);
+			this.charactersMotions.delete(corpse);
+			this.characters.deleteA(corpse);
+		});
+	};
 
+	startNextTurn() {
 		const activeChar = this.turnQueue[0];
 		activeChar.movePoints = activeChar.movePointsPerTurn;
 		this.turnQueue.splice(0, 1);
 		this.turnQueue.push(activeChar);
-		this.forAllPlayers(this.sendUpdateTurnQueue);
+		this.postSpellNotifyPlayers.add(this.sendUpdateTurnQueue);
 	}
 
 	teleport(author: Character, target: FieldNode) {
-		this.characters.removeA(author);
+		this.characters.deleteA(author);
 		this.characters.set(author, target);
-		this.forAllPlayers(this.sendUpdateCharacters);
+		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
 	}
 
+	spendActionPoints(target: Character, number: number) {
+		target.actionPoints -= number;
+		if (target.actionPoints < 0) target.actionPoints = 0;
+		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
+	}
 }

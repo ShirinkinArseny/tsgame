@@ -3,7 +3,7 @@ import {Bimap} from '../../render/utils/Bimap';
 import {Character} from '../Character';
 import {error} from '../../render/utils/Errors';
 import {CharacterCalmState, CharacterMovingState, CharacterState} from './CharacterState';
-import {Spell} from '../spells/Spell';
+import {Spell} from '../spells/_Spell';
 
 export type CharacterMotion = {
 	startedAt: number;

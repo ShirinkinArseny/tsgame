@@ -11,6 +11,7 @@ export interface AbstractButtonContent {
 	onClick: () => any;
 	tooltip: Text;
 	isSelected?: () => boolean;
+	isDisabled?: () => boolean;
 }
 
 
@@ -57,6 +58,7 @@ export class ButtonRow {
 		this.buttons.forEach((button, idx) => {
 
 			const isActive = button.isSelected && button.isSelected();
+			const isDisabled = button.isDisabled && button.isDisabled() || false;
 
 			if ('title' in button) {
 				buttonRenderer.renderWithText(
@@ -65,6 +67,7 @@ export class ButtonRow {
 					button.title,
 					isActive || this.hoveredButton === idx,
 					this.pressedButton === idx,
+					isDisabled
 				);
 			} else if ('sprite' in button) {
 				buttonRenderer.renderWithIcon(
@@ -74,6 +77,7 @@ export class ButtonRow {
 					button.tag,
 					isActive || this.hoveredButton === idx,
 					this.pressedButton === idx,
+					isDisabled
 				);
 			}
 
@@ -145,11 +149,13 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		w: number,
 		hovered: boolean,
 		pressed: boolean,
+		disabled: boolean
 	) {
 		const [r1, r2, r3] = this.textureMap.getFrames(
-			hovered
-				? (pressed ? 'Pressed' : 'Hovered')
-				: 'Idle'
+			disabled ? 'Disabled' :
+				hovered
+					? (pressed ? 'Pressed' : 'Hovered')
+					: 'Idle'
 		);
 
 		texturedShader.useProgram();
@@ -175,8 +181,9 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		tag: string,
 		hovered: boolean,
 		pressed: boolean,
+		disabled: boolean
 	) {
-		this.renderCommon(x, y, buttonHeight - 2 * u, hovered, pressed);
+		this.renderCommon(x, y, buttonHeight - 2 * u, hovered, pressed, disabled);
 		texturedShader.setSprite(texture, tag);
 		texturedShader.draw(vec2(x, y), vec2(buttonHeight, buttonHeight));
 	}
@@ -186,10 +193,11 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		text: string,
 		hovered: boolean,
 		pressed: boolean,
+		disabled: boolean
 	) {
 
 		const w = this.getButtonWidth(text) - 2 * u;
-		this.renderCommon(x, y, w, hovered, pressed);
+		this.renderCommon(x, y, w, hovered, pressed, disabled);
 		const b = [237, 180, 122, 255].map(r => r / 255) as Vec4;
 		const c = [255, 240, 200, 255].map(r => r / 255) as Vec4;
 
