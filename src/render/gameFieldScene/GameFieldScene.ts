@@ -124,6 +124,7 @@ export class GameFieldScene implements Scene {
 
 	buttonsRow2 = new ButtonRow(
 		() => {
+			if (!this.isSelectedCharActionable()) return [];
 			return spells.map(spell => ({
 				sprite: this.spellIcons,
 				tag: spell.title,
