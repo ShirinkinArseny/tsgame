@@ -137,8 +137,8 @@ const render = () => {
 		const pointerEvent = new PointerEvent(
 			cursorButton,
 			vec2(
-				(cursorX + (-rawWidth + canvasWidth) / 2) / canvasWidth * 2 - 1,
-				(cursorY + (-rawHeight + canvasHeight) / 2) / canvasHeight * 2 - 1,
+				((cursorX + (-rawWidth + canvasWidth) / 2) / canvasWidth * 2 - 1) * fw / 2,
+				((cursorY + (-rawHeight + canvasHeight) / 2) / canvasHeight * 2 - 1) * fh / 2,
 			),
 			isCursorPressed,
 			isCursorClicked,

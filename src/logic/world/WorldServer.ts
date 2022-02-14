@@ -10,6 +10,7 @@ import {uuid} from '../../render/utils/ID';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
 import {teams} from '../../constants';
 import {kick} from '../spells/Kick';
+import {Effect} from '../effects/_Effect';
 
 export class WorldServer extends WorldCommon {
 
@@ -60,6 +61,7 @@ export class WorldServer extends WorldCommon {
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
+				effects: [],
 			},
 			this.graph[1]
 		);
@@ -78,6 +80,7 @@ export class WorldServer extends WorldCommon {
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
+				effects: [],
 			},
 			this.graph[2]
 		);
@@ -96,6 +99,7 @@ export class WorldServer extends WorldCommon {
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
+				effects: [],
 			},
 			this.graph[3]
 		);
@@ -114,6 +118,7 @@ export class WorldServer extends WorldCommon {
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
+				effects: [],
 			},
 			this.graph[4]
 		);
@@ -132,6 +137,7 @@ export class WorldServer extends WorldCommon {
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
+				effects: [],
 			},
 			this.graph[5]
 		);
@@ -150,6 +156,7 @@ export class WorldServer extends WorldCommon {
 				movePoints: 5,
 				actionPoints: 5,
 				hp: 5,
+				effects: [],
 			},
 			this.graph[6]
 		);
@@ -318,6 +325,11 @@ export class WorldServer extends WorldCommon {
 	startNextTurn() {
 		const activeChar = this.turnQueue[0];
 		activeChar.movePoints = activeChar.movePointsPerTurn;
+		activeChar.effects.forEach(e => {
+			e.duration--;
+		});
+		activeChar.effects.deleteIf(e => e.duration <= 0);
+		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
 		this.turnQueue.splice(0, 1);
 		this.turnQueue.push(activeChar);
 		this.postSpellNotifyPlayers.add(this.sendUpdateTurnQueue);
@@ -332,6 +344,24 @@ export class WorldServer extends WorldCommon {
 	spendActionPoints(target: Character, number: number) {
 		target.actionPoints -= number;
 		if (target.actionPoints < 0) target.actionPoints = 0;
+		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
+	}
+
+	curse(
+		target: Character,
+		effect: Effect,
+		duration: number
+	) {
+		const already = target.effects.find(e => e.effect === effect);
+		if (already && already.duration <= duration) {
+			target.effects.delete(already);
+		}
+		if (!already || already.duration <= duration) {
+			target.effects.push({
+				effect: effect,
+				duration: duration
+			});
+		}
 		this.postSpellNotifyPlayers.add(this.sendUpdateCharacters);
 	}
 }

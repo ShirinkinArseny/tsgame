@@ -1,6 +1,7 @@
 import {FieldNode} from '../field/FieldNode';
 import {Spell, spellText} from './_Spell';
 import {Text} from '../../render/FontRenderer';
+import {fireEffect, playEffect, shieldEffect} from '../effects/_Effect';
 
 const text: Text = spellText(
 	'Bomb',
@@ -40,6 +41,9 @@ export const bomb: Spell = {
 			const c = world.getCharacterAt(n);
 			if (c) {
 				world.damage(c, 1);
+				world.curse(c, fireEffect, 1);
+				world.curse(c, shieldEffect, 1);
+				world.curse(c, playEffect, 1);
 			}
 		});
 	},

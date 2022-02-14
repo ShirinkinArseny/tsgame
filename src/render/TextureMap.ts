@@ -61,6 +61,7 @@ export class Animation {
 export class TextureMap implements Loadable, Destroyable, Texture {
 
 	private texture: ImageTexture;
+	private loaded: boolean = false;
 	frames = new Map<string, Frame[]>();
 
 	constructor(private path: string) {
@@ -72,6 +73,7 @@ export class TextureMap implements Loadable, Destroyable, Texture {
 	}
 
 	private getTag(tag: string): string {
+		if (!this.loaded) throw new Error('Trying to use texturemap while it is not loaded');
 		const direct = this.frames.get(tag);
 		if (direct) return tag;
 		const splitted = tag.split('.');
@@ -173,6 +175,7 @@ export class TextureMap implements Loadable, Destroyable, Texture {
 						});
 						this.register(name, rects, durations);
 					});
+					this.loaded = true;
 					return;
 				})
 		]);

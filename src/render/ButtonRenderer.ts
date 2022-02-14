@@ -3,15 +3,15 @@ import {Destroyable} from './utils/Destroyable';
 import {HorizontalAlign, FontStyle, ShadowStyle, VerticalAlign, Text} from './FontRenderer';
 import {buttonRenderer, defaultRect, fontRenderer, textboxRenderer, texturedShader} from '../SharedResources';
 import {TextureMap} from './TextureMap';
-import {Mat4, vec2, Vec2, vec4, Vec4} from './utils/Vector';
+import {vec2, Vec2, Vec4} from './utils/Vector';
 import {PointerEvent} from '../Events';
-import {fw} from '../GlobalContext';
+
 
 export interface AbstractButtonContent {
 	onClick: () => any;
-	tooltip: Text;
 	isSelected?: () => boolean;
 	isDisabled?: () => boolean;
+	tooltip: Text;
 }
 
 
@@ -30,49 +30,162 @@ const buttonHeight = 16;
 const spaceBetweenButtons = 1;
 const u = 6; // ну это такая штука
 
-export class ButtonRow {
+export type TooltippedHoverable = {
+	position: Vec2,
+	width: number,
+	height: number,
+	tooltip: Text
+}
 
-	buttonsCoords: Vec2[] = [];
-	hoveredButton: number | undefined = undefined;
-	pressedButton: number | undefined = undefined;
+export abstract class TooltippedItemsRow {
+
+	protected hovered: TooltippedHoverable | undefined;
+
+	protected constructor(
+		protected x: number,
+		protected y: number
+	) {
+	}
+
+	abstract getItems(): TooltippedHoverable[];
+
+	update(
+		pointerEvent: PointerEvent
+	) {
+		this.hovered = undefined;
+		const ptr = pointerEvent.xy;
+		this.getItems().forEach(item => {
+			if (
+				item.position.x <= ptr.x &&
+				ptr.x <= item.position.x + item.width &&
+				item.position.y <= ptr.y &&
+				ptr.y <= item.position.y + item.height
+			) {
+				this.hovered = item;
+			}
+		});
+	}
+
+	renderTooltipLayer() {
+		if (this.hovered) {
+			textboxRenderer.renderTextBox(
+				this.hovered.position.x + this.hovered.width,
+				this.hovered.position.y,
+				100,
+				this.hovered.tooltip,
+				VerticalAlign.BOTTOM,
+				HorizontalAlign.LEFT
+			);
+		}
+	}
+
+}
+
+export type TooltippedIcon = {
+	icon: string,
+	tooltip: Text
+}
+
+const tooltippedIconSize = 12;
+const tooltippedIconsSpaceBetween = 1;
+
+export class TooltippedIcons extends TooltippedItemsRow {
+
+
+	constructor(
+		private readonly icons: () => TooltippedIcon[],
+		x: number, y: number,
+		private iconsMap: TextureMap
+	) {
+		super(x, y);
+	}
+
+	getItems(): TooltippedHoverable[] {
+		return this.icons().map((icon, idx) => ({
+			position: vec2(
+				this.x + idx * (tooltippedIconSize + tooltippedIconsSpaceBetween),
+				this.y
+			),
+			width: tooltippedIconSize,
+			height: tooltippedIconSize,
+			tooltip: icon.tooltip
+		}));
+	}
+
+	draw() {
+		this.renderTooltipLayer();
+		let xx = this.x;
+		this.icons().forEach(icon => {
+			texturedShader.useProgram();
+			texturedShader.setSprite(this.iconsMap, icon.icon);
+			texturedShader.draw(
+				vec2(xx, this.y),
+				vec2(tooltippedIconSize, tooltippedIconSize)
+			);
+			xx += (tooltippedIconSize + tooltippedIconsSpaceBetween);
+		});
+	}
+
+}
+
+const getButtonWidth = (buttonContent: ButtonContent) => {
+	return ('title' in buttonContent)
+		? buttonRenderer.getButtonWidth(buttonContent.title)
+		: buttonHeight;
+};
+
+export class ButtonRow extends TooltippedItemsRow {
+
+	private hoveredButton: number | undefined = undefined;
+	private pressedButton: number | undefined = undefined;
+
+	constructor(private readonly buttons: () => ButtonContent[], x: number, y: number) {
+		super(x, y);
+	}
+
+	getItems() {
+		const res: TooltippedHoverable[] = [];
+		let xx = 0;
+		this.buttons().forEach(b => {
+			const w = getButtonWidth(b);
+			const x = xx;
+			res.push({
+				position: vec2(
+					this.x + x,
+					this.y,
+				),
+				width: w,
+				height: buttonHeight,
+				tooltip: b.tooltip
+			});
+			xx += w + spaceBetweenButtons;
+		});
+		return res;
+	}
 
 	isButtonHovered() {
 		return this.hoveredButton !== undefined;
 	}
 
-	constructor(private readonly buttons: ButtonContent[], private px: number, private py: number) {
+
+	draw() {
 		let xx = 0;
-		buttons.forEach(b => {
-			const w =
-				('title' in b)
-					? buttonRenderer.getButtonWidth(b.title)
-					: buttonHeight;
-
-			const x = xx;
-			this.buttonsCoords.push(vec2(x, x + w));
-			xx += w + spaceBetweenButtons;
-		});
-	}
-
-	render() {
-		this.buttons.forEach((button, idx) => {
-
+		this.buttons().forEach((button, idx) => {
 			const isActive = button.isSelected && button.isSelected();
 			const isDisabled = button.isDisabled && button.isDisabled() || false;
-
 			if ('title' in button) {
-				buttonRenderer.renderWithText(
-					this.buttonsCoords[idx].x + this.px,
-					this.py,
+				xx += buttonRenderer.renderWithText(
+					xx + this.x,
+					this.y,
 					button.title,
 					isActive || this.hoveredButton === idx,
 					this.pressedButton === idx,
 					isDisabled
 				);
 			} else if ('sprite' in button) {
-				buttonRenderer.renderWithIcon(
-					this.buttonsCoords[idx].x + this.px,
-					this.py,
+				xx += buttonRenderer.renderWithIcon(
+					xx + this.x,
+					this.y,
 					button.sprite,
 					button.tag,
 					isActive || this.hoveredButton === idx,
@@ -80,52 +193,37 @@ export class ButtonRow {
 					isDisabled
 				);
 			}
-
+			xx += spaceBetweenButtons;
 		});
 	}
 
-	renderTooltipLayer() {
-		if (this.hoveredButton !== undefined) {
-			const button = this.buttons[this.hoveredButton];
-			if (button.tooltip) {
-				const coords = this.buttonsCoords[this.hoveredButton];
-				const x = this.px + coords.y;
-				textboxRenderer.renderTextBox(
-					x, this.py,
-					Math.min(100, fw / 2 - x - 2 * u),
-					button.tooltip,
-					VerticalAlign.BOTTOM,
-					HorizontalAlign.LEFT
-				);
-			}
-		}
-	}
-
 	update(
-		pressedKeyMap: Map<string, boolean>,
-		scrToPx: Mat4,
 		pointerEvent: PointerEvent
 	) {
-		const ptr = vec4(pointerEvent.xy.x, pointerEvent.xy.y, 0, 1).times(scrToPx).xy;
+		super.update(pointerEvent);
+		const ptr = pointerEvent.xy;
 		this.hoveredButton = undefined;
 		this.pressedButton = undefined;
-		this.buttonsCoords.forEach((btn, idx) => {
+		let xx = 0;
+		this.buttons().forEach((btn, idx) => {
 			if (pointerEvent.cancelled) return;
+			const w = getButtonWidth(btn);
 			if (
-				btn.x + this.px <= ptr.x &&
-				ptr.x <= btn.y + this.px &&
-				this.py <= ptr.y &&
-				ptr.y <= this.py + buttonHeight
+				xx + this.x <= ptr.x &&
+				ptr.x <= xx + this.x + w &&
+				this.y <= ptr.y &&
+				ptr.y <= this.y + buttonHeight
 			) {
 				this.hoveredButton = idx;
 				if (pointerEvent.isCursorPressed) {
 					this.pressedButton = idx;
 				}
 				if (pointerEvent.isCursorClicked) {
-					this.buttons[idx].onClick();
+					btn.onClick();
 					pointerEvent.cancelled = true;
 				}
 			}
+			xx += w + spaceBetweenButtons;
 		});
 	}
 
@@ -186,6 +284,7 @@ export class ButtonRenderer implements Loadable, Destroyable {
 		this.renderCommon(x, y, buttonHeight - 2 * u, hovered, pressed, disabled);
 		texturedShader.setSprite(texture, tag);
 		texturedShader.draw(vec2(x, y), vec2(buttonHeight, buttonHeight));
+		return buttonHeight;
 	}
 
 	renderWithText(

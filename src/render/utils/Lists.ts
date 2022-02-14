@@ -12,6 +12,8 @@ declare global {
 
 	interface Array<T> {
 		delete(value: T): Array<T>;
+
+		deleteIf(predicate: (element: T) => boolean): Array<T>;
 	}
 }
 Map.prototype.keysList = function (): Array<any> {
@@ -33,3 +35,14 @@ Array.prototype.delete = function (element): Array<any> {
 	}
 	return this;
 };
+Array.prototype.deleteIf = function (predicate): Array<any> {
+	for (let i = 0; i < this.length; i++) {
+		const e = this[i];
+		if (predicate(e)) {
+			this.splice(i, 1);
+			i--;
+		}
+	}
+	return this;
+};
+

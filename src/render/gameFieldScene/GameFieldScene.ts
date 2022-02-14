@@ -1,20 +1,18 @@
 import {Scene} from '../../Scene';
 import {BorderedShape} from '../shapes/BorderedShape';
 import {FieldNode} from '../../logic/field/FieldNode';
-import {identity, ortho, reverse} from '../utils/Matrices';
 import {isPointInConvexShape} from '../utils/Geom';
 import {FontStyle, HorizontalAlign, ShadowStyle, Text} from '../FontRenderer';
 import {Character} from '../../logic/Character';
 import {error} from '../utils/Errors';
 import {coloredShader, fontRenderer, frameRenderer, panelRenderer, texturedShader} from '../../SharedResources';
 import {Animation, TextureMap} from '../TextureMap';
-import {Mat4, Vec2, vec2, Vec4, vec4} from '../utils/Vector';
+import {Vec2, vec2, Vec4, vec4} from '../utils/Vector';
 import {PointerButton, PointerEvent} from '../../Events';
-import {ButtonRow} from '../ButtonRenderer';
+import {ButtonRow, TooltippedIcons} from '../ButtonRenderer';
 import {fh, fw} from '../../GlobalContext';
 import {limit} from '../utils/String';
 import {Spell, spells} from '../../logic/spells/_Spell';
-import {range} from '../utils/Lists';
 import {WorldClient} from '../../logic/world/WorldClient';
 import {CharacterCalmState} from '../../logic/world/CharacterState';
 import {teams} from '../../constants';
@@ -36,22 +34,60 @@ export class GameFieldScene implements Scene {
 	name: string = 'GameField';
 	nodeToShapeMap: Map<FieldNode, BorderedShape> = new Map<FieldNode, BorderedShape>();
 	hoveredNode: FieldNode | undefined;
-	pxToScreen: Mat4 = identity();
-	screenToPx: Mat4 = identity();
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	giraffe = new TextureMap('characters/giraffe/giraffe');
 	bus = new TextureMap('characters/bus/bus');
 	portraits = new TextureMap('characters/portraits/portraits');
 	background = new TextureMap('levels/playground/playground');
-	spellsIcons = new TextureMap('ui/spells/spells');
-	effects = new TextureMap('effects/effects');
-	pointer: Vec4 = vec4();
+	spellIcons = new TextureMap('ui/spellIcons/spellIcons');
+	spellAnimation = new TextureMap('spellAnimation/spellAnimation');
+	effectIcons = new TextureMap('ui/effectIcons/effectIcons');
+	pointer: Vec2 = vec2();
 	selectedCharacter: Character | undefined;
 	selectedSpell: Spell | undefined;
 	animations = new Map<FieldNode, Animation[]>();
 
+
+	effectsRow = new TooltippedIcons(
+		() => {
+			if (!this.selectedCharacter) return [];
+			return this.selectedCharacter.effects.map(e => ({
+				icon: e.effect.title,
+				tooltip: e.effect.description
+			}));
+		},
+		-fw / 2 + 42,
+		fh / 2 - 12,
+		this.effectIcons
+	);
+
+	load(): Promise<any> {
+		return Promise.all([
+			this.spacedude.load(),
+			this.giraffe.load(),
+			this.bus.load(),
+			this.portraits.load(),
+			this.background.load(),
+			this.spellIcons.load(),
+			this.spellAnimation.load(),
+			this.effectIcons.load(),
+		]);
+	}
+
+	destroy() {
+		Array.of(...this.nodeToShapeMap.values()).forEach(v => v.destroy());
+		this.spacedude.destroy();
+		this.giraffe.destroy();
+		this.bus.destroy();
+		this.portraits.destroy();
+		this.background.destroy();
+		this.spellIcons.destroy();
+		this.spellAnimation.destroy();
+		this.effectIcons.destroy();
+	}
+
 	buttonsRow1 = new ButtonRow(
-		[
+		() => [
 			{
 				title: 'Inventory',
 				onClick: () => {
@@ -84,10 +120,12 @@ export class GameFieldScene implements Scene {
 		-fw / 2 + 170,
 		fh / 2 - 17
 	);
+
+
 	buttonsRow2 = new ButtonRow(
-		spells
-			.map(spell => ({
-				sprite: this.spellsIcons,
+		() => {
+			return spells.map(spell => ({
+				sprite: this.spellIcons,
 				tag: spell.title,
 				onClick: () => {
 					if (this.selectedCharacter) {
@@ -110,8 +148,8 @@ export class GameFieldScene implements Scene {
 					this.world,
 					this.selectedCharacter
 				)
-			}))
-		,
+			}));
+		},
 		-fw / 2 + 170,
 		fh / 2 - 34
 	);
@@ -151,29 +189,6 @@ export class GameFieldScene implements Scene {
 		});
 	}
 
-	load(): Promise<any> {
-		return Promise.all([
-			this.spacedude.load(),
-			this.giraffe.load(),
-			this.bus.load(),
-			this.portraits.load(),
-			this.background.load(),
-			this.spellsIcons.load(),
-			this.effects.load()
-		]);
-	}
-
-	destroy() {
-		Array.of(...this.nodeToShapeMap.values()).forEach(v => v.destroy());
-		this.spacedude.destroy();
-		this.giraffe.destroy();
-		this.bus.destroy();
-		this.portraits.destroy();
-		this.background.destroy();
-		this.spellsIcons.destroy();
-		this.effects.destroy();
-	}
-
 	private getCharacterSprite(character: Character): TextureMap {
 		if (character.type === 'giraffe') {
 			return this.giraffe;
@@ -210,23 +225,14 @@ export class GameFieldScene implements Scene {
 		case 'CharacterCalmState':
 			return 'A.Idle';
 		case 'CharacterMovingState': {
-			const a = state.from.center.xyzw.times(this.pxToScreen);
-			const b = state.to.center.xyzw.times(this.pxToScreen);
+			const a = state.from.center;
+			const b = state.to.center;
 			return a[0] > b[0] ? 'A.Move.9' : 'A.Move.3';
 		}
 		}
 	}
 
 	render() {
-
-		this.pxToScreen = ortho(
-			-fw / 2,
-			fw / 2,
-			-fh / 2,
-			fh / 2,
-		);
-		this.screenToPx = reverse(this.pxToScreen);
-
 		this.drawBackground();
 		this.drawCells();
 		this.drawCellEffects();
@@ -366,7 +372,7 @@ export class GameFieldScene implements Scene {
 
 	private drawCellEffects() {
 		texturedShader.useProgram();
-		texturedShader.setTexture('texture', this.effects);
+		texturedShader.setTexture('texture', this.spellAnimation);
 		this.world.getNodes().forEach((node) => {
 			const effects = this.animations.get(node) || [];
 			for (let i = 0; i < effects.length; i++) {
@@ -390,10 +396,6 @@ export class GameFieldScene implements Scene {
 	}
 
 	private drawCharacters() {
-		const hpbar = (value: number, max: number) => range(0, max - 1).map(i =>
-			'△◭▲'[(value > i + 0.75 ? 1 : 0) + (value > i + 0.25 ? 1 : 0)]
-		).join('');
-
 		const characters = this.world.getCharacters()
 			.map((character) => {
 				return {
@@ -410,16 +412,6 @@ export class GameFieldScene implements Scene {
 				point.x - 16,
 				point.y - 26
 			), vec2(32, 32));
-			fontRenderer.drawString(
-				character.name + ' ' + hpbar(character.hp, character.maxHp),
-				point.x + 16, point.y - 40,
-				FontStyle.BOLD,
-				vec4(1, 1, 1, 1),
-				HorizontalAlign.CENTER,
-				1,
-				ShadowStyle.STROKE,
-				vec4(0, 0, 0, 1),
-			);
 		});
 	}
 
@@ -428,70 +420,73 @@ export class GameFieldScene implements Scene {
 		this.drawQueue();
 	}
 
+	private isSelectedCharActionable() {
+		return this.selectedCharacter && this.selectedCharacter === this.turnedCharacter() && this.selectedCharacter.team === teams.ally;
+	}
+
 	private drawBottomPanel() {
 		panelRenderer.render();
 
-		this.buttonsRow1.render();
-		if (this.selectedCharacter && this.selectedCharacter === this.turnedCharacter() && this.selectedCharacter.team === teams.ally) {
-
-			this.buttonsRow2.render();
+		this.buttonsRow1.draw();
+		if (this.isSelectedCharActionable()) {
+			this.buttonsRow2.draw();
 		}
 
 		this.buttonsRow1.renderTooltipLayer();
 		this.buttonsRow2.renderTooltipLayer();
 
-		frameRenderer.renderFrame(-fw / 2 + 1, fh / 2 - 49, 32, 32);
 
 		const selected = this.selectedCharacter;
 		if (selected) {
+			frameRenderer.renderFrame(-fw / 2 + 1, fh / 2 - 49, 20, 20);
 			texturedShader.useProgram();
 			texturedShader.setSprite(this.portraits, selected.type);
 			texturedShader.draw(
-				vec2(-fw / 2 + 17, fh / 2 - 35),
+				vec2(-fw / 2 + 11, fh / 2 - 40),
 				vec2(16, 16)
 			);
-			const x1 = -fw / 2 + 55;
-			const x2 = -fw / 2 + 110;
-			const y1 = fh / 2 - 15;
-			const y2 = fh / 2 - 26;
-			const ren = (text: string, x: number, y: number,
-				fs: FontStyle = FontStyle.SMALL,
-				c: Vec4 = vec4(0.8, 0.6, 0.4, 1)
-			) => {
-				fontRenderer.drawString(
-					text,
-					x,
-					y,
-					fs,
-					c,
-					HorizontalAlign.LEFT,
-					1,
-					ShadowStyle.DIAGONAL
-				);
-			};
-			ren(
+			fontRenderer.drawString(
 				limit(selected.name, 15),
-				x1,
+				-fw / 2 + 42,
 				fh / 2 - 38,
 				FontStyle.BOLD,
-				vec4(0.92, 0.70, 0.47, 1)
+				vec4(0.92, 0.70, 0.47, 1),
+				HorizontalAlign.LEFT,
+				1,
+				ShadowStyle.DIAGONAL
 			);
-			ren(
-				'health: ' + selected.hp + '/' + selected.maxHp,
-				x1, y1,
+			fontRenderer.drawString(
+				'❤ ' + selected.hp + '/' + selected.maxHp,
+				-fw / 2 + 42,
+				fh / 2 - 26,
+				FontStyle.SMALL,
+				vec4(0.92, 0.70, 0.47, 1),
+				HorizontalAlign.LEFT,
+				1,
+				ShadowStyle.DIAGONAL
 			);
-			ren(
-				'M/P: ' + selected.movePoints + '/' + selected.movePointsPerTurn,
-				x1, y2,
+			fontRenderer.drawString(
+				'🕐 ' + selected.actionPoints + '/' + selected.actionPointsPerTurn,
+				-fw / 2 + 82,
+				fh / 2 - 26,
+				FontStyle.SMALL,
+				vec4(0.92, 0.70, 0.47, 1),
+				HorizontalAlign.LEFT,
+				1,
+				ShadowStyle.DIAGONAL
 			);
-			ren(
-				'lorem: 3/15',
-				x2, y1,
+			fontRenderer.drawString(
+				'🦶 ' + selected.movePoints + '/' + selected.movePointsPerTurn,
+				-fw / 2 + 122,
+				fh / 2 - 26,
+				FontStyle.SMALL,
+				vec4(0.92, 0.70, 0.47, 1),
+				HorizontalAlign.LEFT,
+				1,
+				ShadowStyle.DIAGONAL
 			);
-			ren(
-				'A/P: ' + selected.actionPoints + '/' + selected.actionPointsPerTurn,
-				x2, y2,
-			);
+			this.effectsRow.draw();
+
 		}
 
 	}
@@ -518,10 +513,10 @@ export class GameFieldScene implements Scene {
 		pressedKeyMap: Map<string, boolean>,
 		pointerEvent: PointerEvent
 	) {
-		this.buttonsRow1.update(pressedKeyMap, this.screenToPx, pointerEvent);
-		this.buttonsRow2.update(pressedKeyMap, this.screenToPx, pointerEvent);
-		const cursor = pointerEvent.xy.xyzw;
-		this.pointer = cursor.times(this.screenToPx);
+		this.buttonsRow1.update(pointerEvent);
+		this.buttonsRow2.update(pointerEvent);
+		this.effectsRow.update(pointerEvent);
+		this.pointer = pointerEvent.xy;
 		const hoveredNode = this.world.getNodes().find((node) =>
 			isPointInConvexShape(this.pointer.xy, node.points));
 		this.hoveredNode = hoveredNode;
@@ -565,7 +560,7 @@ export class GameFieldScene implements Scene {
 
 	castVisualEffect = (node: FieldNode, type: string) => {
 		const old = this.animations.get(node) || [];
-		old.push(this.effects.getAnimation(type));
+		old.push(this.spellAnimation.getAnimation(type));
 		this.animations.set(node, old);
 	};
 }

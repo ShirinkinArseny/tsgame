@@ -39,7 +39,7 @@ const styledAlphabet = [
 ];
 
 const symbolicAlphabet = [
-	...'○◐●△◭▲📏🔪🏹⏰',
+	...'❤🕐🦶📏🔪🏹⏰',
 ];
 
 const alphabet = [
@@ -192,7 +192,7 @@ export class FontRenderer implements Destroyable, Loadable {
 								const char = v.char;
 								const bound = bounds[symbolIdx];
 								if (!bound) {
-									throw new Error('WTF?');
+									throw new Error('WTF? '+line);
 								}
 								const args = [
 									(bound[0]),
