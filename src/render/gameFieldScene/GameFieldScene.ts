@@ -56,7 +56,7 @@ export class GameFieldScene implements Scene {
 				tooltip: e.effect.description
 			}));
 		},
-		-fw / 2 + 42,
+		-fw / 2 + 54,
 		fh / 2 - 13,
 		this.effectIcons
 	);
@@ -480,6 +480,16 @@ export class GameFieldScene implements Scene {
 				'🦶 ' + selected.movePoints + '/' + selected.movePointsPerTurn,
 				-fw / 2 + 122,
 				fh / 2 - 26,
+				FontStyle.SMALL,
+				vec4(0.92, 0.70, 0.47, 1),
+				HorizontalAlign.LEFT,
+				1,
+				ShadowStyle.DIAGONAL
+			);
+			fontRenderer.drawString(
+				'✨',
+				-fw / 2 + 42,
+				fh / 2 - 14,
 				FontStyle.SMALL,
 				vec4(0.92, 0.70, 0.47, 1),
 				HorizontalAlign.LEFT,

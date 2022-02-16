@@ -39,7 +39,7 @@ const styledAlphabet = [
 ];
 
 const symbolicAlphabet = [
-	...'❤🕐🦶📏🔪🏹⏰',
+	...'❤🕐🦶📏🔪🏹⏰✨',
 ];
 
 const alphabet = [
