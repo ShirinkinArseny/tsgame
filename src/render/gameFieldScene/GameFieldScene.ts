@@ -5,7 +5,14 @@ import {isPointInConvexShape} from '../utils/Geom';
 import {FontStyle, HorizontalAlign, ShadowStyle, Text} from '../FontRenderer';
 import {Character} from '../../logic/Character';
 import {error} from '../utils/Errors';
-import {coloredShader, fontRenderer, frameRenderer, panelRenderer, texturedShader} from '../../SharedResources';
+import {
+	coloredShader,
+	fontRenderer,
+	frameRenderer,
+	panelRenderer, portraits,
+	queueRenderer,
+	texturedShader
+} from '../../SharedResources';
 import {Animation, TextureMap} from '../TextureMap';
 import {Vec2, vec2, Vec4, vec4} from '../utils/Vector';
 import {PointerButton, PointerEvent} from '../../Events';
@@ -37,7 +44,6 @@ export class GameFieldScene implements Scene {
 	spacedude = new TextureMap('characters/spacedude/spacedude');
 	giraffe = new TextureMap('characters/giraffe/giraffe');
 	bus = new TextureMap('characters/bus/bus');
-	portraits = new TextureMap('characters/portraits/portraits');
 	background = new TextureMap('levels/playground/playground');
 	spellIcons = new TextureMap('ui/spellIcons/spellIcons');
 	spellAnimation = new TextureMap('spellAnimation/spellAnimation');
@@ -66,7 +72,6 @@ export class GameFieldScene implements Scene {
 			this.spacedude.load(),
 			this.giraffe.load(),
 			this.bus.load(),
-			this.portraits.load(),
 			this.background.load(),
 			this.spellIcons.load(),
 			this.spellAnimation.load(),
@@ -79,7 +84,6 @@ export class GameFieldScene implements Scene {
 		this.spacedude.destroy();
 		this.giraffe.destroy();
 		this.bus.destroy();
-		this.portraits.destroy();
 		this.background.destroy();
 		this.spellIcons.destroy();
 		this.spellAnimation.destroy();
@@ -441,7 +445,7 @@ export class GameFieldScene implements Scene {
 		if (selected) {
 			frameRenderer.renderFrame(-fw / 2 + 1, fh / 2 - 49, 20, 20);
 			texturedShader.useProgram();
-			texturedShader.setSprite(this.portraits, selected.type);
+			texturedShader.setSprite(portraits, selected.type);
 			texturedShader.draw(
 				vec2(-fw / 2 + 11, fh / 2 - 40),
 				vec2(16, 16)
@@ -504,20 +508,8 @@ export class GameFieldScene implements Scene {
 
 
 	private drawQueue() {
-		const textureSize = 16;
 		const queue = this.world.getTurnQueue();
-		const startPoint = -(queue.length * textureSize) / 2;
-		texturedShader.useProgram();
-		texturedShader.setTexture('texture', this.portraits);
-		queue.forEach((ch, i) => {
-			texturedShader.setTexturePosition(
-				this.portraits.getFrame(ch.type).rect
-			);
-			texturedShader.draw(
-				vec2(startPoint + i * textureSize, -fh / 2),
-				vec2(textureSize, textureSize)
-			);
-		});
+		queueRenderer.draw(queue);
 	}
 
 	update(

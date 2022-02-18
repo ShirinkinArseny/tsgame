@@ -46,6 +46,7 @@ export class FrameRenderer implements Loadable, Destroyable {
 		draw(x + u + w, y + u + h, 'RB');
 		draw(x + u, y + u + h, 'B', w, u);
 
+		texturedShader.setVec2('textureScale', vec2(1.0, 1.0));
 	}
 
 	load(): Promise<any> {

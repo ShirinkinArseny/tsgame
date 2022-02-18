@@ -6,6 +6,8 @@ import {TextboxRenderer} from './render/TextboxRenderer';
 import {FrameRenderer} from './render/FrameRenderer';
 import {PanelRenderer} from './render/PanelRenderer';
 import {TexturedShader} from './render/shaders/TexturedShader';
+import {QueueRenderer} from './render/QueueRenderer';
+import {TextureMap} from './render/TextureMap';
 
 export let defaultRect!: Rect;
 export let texturedShader!: TexturedShader;
@@ -16,6 +18,8 @@ export let buttonRenderer!: ButtonRenderer;
 export let textboxRenderer!: TextboxRenderer;
 export let frameRenderer!: FrameRenderer;
 export let panelRenderer!: PanelRenderer;
+export let queueRenderer!: QueueRenderer;
+export let portraits!: TextureMap;
 
 export const loadSharedResources = () => {
 	defaultRect = new Rect();
@@ -27,6 +31,8 @@ export const loadSharedResources = () => {
 	textboxRenderer = new TextboxRenderer();
 	frameRenderer = new FrameRenderer('ui/frame/frame');
 	panelRenderer = new PanelRenderer();
+	queueRenderer = new QueueRenderer();
+	portraits = new TextureMap('characters/portraits/portraits');
 	return Promise.all([
 		texturedShader.load(),
 		postFxShader.load(),
@@ -35,6 +41,8 @@ export const loadSharedResources = () => {
 		buttonRenderer.load(),
 		textboxRenderer.load(),
 		frameRenderer.load(),
-		panelRenderer.load()
+		panelRenderer.load(),
+		queueRenderer.load(),
+		portraits.load()
 	]);
 };
