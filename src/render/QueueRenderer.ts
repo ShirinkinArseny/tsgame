@@ -18,10 +18,10 @@ export class QueueRenderer implements Loadable, Destroyable {
 
 	private oldWidth: number | undefined = undefined;
 
-	private charIdx = new WeakMap<Character, number>();
-	private charState = new WeakMap<Character, string>();
-	private charX = new WeakMap<Character, number>();
-	private charY = new WeakMap<Character, number>();
+	private charIdx = new Map<Character, number>();
+	private charState = new Map<Character, string>();
+	private charX = new Map<Character, number>();
+	private charY = new Map<Character, number>();
 
 	draw(
 		queue: Character[]
@@ -54,8 +54,11 @@ export class QueueRenderer implements Loadable, Destroyable {
 			vec2(wRight, h)
 		);
 
+		const deadChars = new Map(this.charX.keysList().map(char => [char, true]));
 		for (let i = 0; i < queue.length; i++) {
 			const c = queue[i];
+
+			deadChars.delete(c);
 
 			const oldIdx = this.charIdx.get(c) || 0;
 			this.charIdx.set(c, i);
@@ -102,6 +105,25 @@ export class QueueRenderer implements Loadable, Destroyable {
 				vec2(16, 16)
 			);
 		}
+
+		deadChars.forEach((_, char) => {
+			const x = this.charX.get(char) || 0;
+			let y = this.charY.get(char) || 0;
+			y--;
+			if (y < -20) {
+				this.charX.delete(char);
+				this.charY.delete(char);
+				this.charState.delete(char);
+				this.charIdx.delete(char);
+			} else {
+				this.charY.set(char, y);
+				texturedShader.setSprite(portraits, char.type);
+				texturedShader.draw(
+					vec2(x + wMiddle / 2 - 8, -fh / 2 + 1 + y),
+					vec2(16, 16)
+				);
+			}
+		});
 
 		frameRenderer.renderFrame(
 			-width / 2 + 5, -fh / 2 - 10, 16, 20
