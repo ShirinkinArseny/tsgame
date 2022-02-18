@@ -23,6 +23,8 @@ export class QueueRenderer implements Loadable, Destroyable {
 	private charX = new Map<Character, number>();
 	private charY = new Map<Character, number>();
 
+	private lastTime = new Date().getTime();
+
 	draw(
 		queue: Character[]
 	) {
@@ -32,12 +34,16 @@ export class QueueRenderer implements Loadable, Destroyable {
 			queue.length * wMiddle
 		;
 
+		const now = new Date().getTime();
+		const diff = 6 * (now - this.lastTime) / 1000;
+		this.lastTime = now;
+		const change = (value: number, target: number) => {
+			const d = (target - value);
+			return value + d * diff + Math.sign(d) * diff;
+		};
+
 		let width = this.oldWidth || newWidth;
-		if (width < newWidth) {
-			width++;
-		} else if (width > newWidth) {
-			width--;
-		}
+		width = change(width, newWidth);
 		this.oldWidth = width;
 
 		texturedShader.setVec2('textureScale', vec2(width / 8, 1.0));
@@ -74,24 +80,20 @@ export class QueueRenderer implements Loadable, Destroyable {
 			}
 			let currentX = oldX;
 			if (!this.charState.get(c)) {
-				if (oldX > targetX) {
-					currentX--;
-				} else if (oldX < targetX) {
-					currentX++;
-				}
+				currentX = change(currentX, targetX);
 			}
 
 			let currentY = this.charY.get(c) || 0;
 			const currentState = this.charState.get(c);
 			if (currentState === 'up') {
-				currentY--;
-				if (currentY < -20) {
+				currentY = change(currentY, -20);
+				if (currentY <= -20) {
 					currentX = targetX;
 					this.charState.set(c, 'down');
 				}
 			} else if (currentState === 'down') {
-				currentY++;
-				if (currentY === 0) {
+				currentY = change(currentY, 0);
+				if (currentY >= 0) {
 					this.charState.delete(c);
 				}
 			}
@@ -99,9 +101,13 @@ export class QueueRenderer implements Loadable, Destroyable {
 			this.charX.set(c, currentX);
 			this.charY.set(c, currentY);
 
+
 			texturedShader.setSprite(portraits, c.type);
 			texturedShader.draw(
-				vec2(currentX + wMiddle / 2 - 8, -fh / 2 + 1 + currentY),
+				vec2(
+					Math.round(currentX + wMiddle / 2 - 8),
+					Math.round(-fh / 2 + 1 + currentY)
+				),
 				vec2(16, 16)
 			);
 		}
@@ -109,7 +115,7 @@ export class QueueRenderer implements Loadable, Destroyable {
 		deadChars.forEach((_, char) => {
 			const x = this.charX.get(char) || 0;
 			let y = this.charY.get(char) || 0;
-			y--;
+			y = change(y, -20);
 			if (y < -20) {
 				this.charX.delete(char);
 				this.charY.delete(char);
@@ -119,7 +125,10 @@ export class QueueRenderer implements Loadable, Destroyable {
 				this.charY.set(char, y);
 				texturedShader.setSprite(portraits, char.type);
 				texturedShader.draw(
-					vec2(x + wMiddle / 2 - 8, -fh / 2 + 1 + y),
+					vec2(
+						Math.round(x + wMiddle / 2 - 8),
+						Math.round(-fh / 2 + 1 + y)
+					),
 					vec2(16, 16)
 				);
 			}
