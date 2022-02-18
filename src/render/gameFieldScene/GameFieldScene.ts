@@ -192,6 +192,9 @@ export class GameFieldScene implements Scene {
 				this.castVisualEffect
 			);
 		});
+		world.addQueueListener(() => {
+			this.selectedCharacter = world.getTurnQueue()[0];
+		});
 	}
 
 	private getCharacterSprite(character: Character): TextureMap {
@@ -237,7 +240,14 @@ export class GameFieldScene implements Scene {
 		}
 	}
 
+	private preRender() {
+		if (this.selectedCharacter && this.selectedCharacter.hp <= 0) {
+			this.selectedCharacter = undefined;
+		}
+	}
+
 	render() {
+		this.preRender();
 		this.drawBackground();
 		this.drawCells();
 		this.drawCellEffects();

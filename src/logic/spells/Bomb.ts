@@ -7,7 +7,7 @@ const text: Text = spellText(
 	'Bomb',
 	'Drop a bomb that deal fire damage to everything in the area around it.',
 	[
-		['🔪', 'Damage', '1'],
+		['🔪', 'Damage', '2'],
 		['🏹', 'Range', '5'],
 		['📏', 'Radius', '2'],
 		['⏰', 'A/P', '2']
@@ -40,7 +40,7 @@ export const bomb: Spell = {
 		affectedNodes.forEach(n => {
 			const c = world.getCharacterAt(n);
 			if (c) {
-				world.damage(c, 1);
+				world.damage(c, 2);
 				world.curse(c, fireEffect, 1);
 				world.curse(c, shieldEffect, 1);
 				world.curse(c, playEffect, 1);
