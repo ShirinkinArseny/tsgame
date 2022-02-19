@@ -5,6 +5,7 @@ import {portraits, texturedShader} from '../SharedResources';
 import {vec2} from './utils/Vector';
 import {fh} from '../GlobalContext';
 import {Character} from '../logic/Character';
+import {pointerLayer} from './PointerLayer';
 
 const wLeft = 8;
 const wMiddle = 18;
@@ -14,9 +15,14 @@ const h = 26;
 export class QueueRenderer implements Loadable, Destroyable {
 
 
-	panelParts = new TextureMap('ui/queue/queue');
-	bar = new TextureMap('ui/bar/bar');
-	team = new TextureMap('ui/team/team');
+	constructor(
+		private onClick: (char: Character) => void,
+	) {
+	}
+
+	private panelParts = new TextureMap('ui/queue/queue');
+	private bar = new TextureMap('ui/bar/bar');
+	private team = new TextureMap('ui/team/team');
 
 	private oldWidth: number | undefined = undefined;
 
@@ -111,6 +117,19 @@ export class QueueRenderer implements Loadable, Destroyable {
 
 			const xx = Math.round(currentX + wMiddle / 2 - 8);
 			const yy = Math.round(-fh / 2 + 1 + currentY);
+
+			pointerLayer.listen({
+				x: xx,
+				y: yy,
+				w: 16,
+				h: 16,
+				on: (e) => {
+					if (e.isCursorClicked) {
+						e.cancelled = true;
+						this.onClick(c);
+					}
+				}
+			});
 
 			texturedShader.setSprite(
 				this.team,

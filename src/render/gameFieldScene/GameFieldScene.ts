@@ -10,19 +10,22 @@ import {
 	fontRenderer,
 	frameRenderer,
 	panelRenderer, portraits,
-	queueRenderer,
 	texturedShader
 } from '../../SharedResources';
 import {Animation, TextureMap} from '../TextureMap';
 import {Vec2, vec2, Vec4, vec4} from '../utils/Vector';
 import {PointerButton, PointerEvent} from '../../Events';
-import {ButtonRow, TooltippedIcons} from '../ButtonRenderer';
+import {ButtonRow} from '../ButtonRenderer';
 import {fh, fw} from '../../GlobalContext';
 import {limit} from '../utils/String';
 import {Spell, spells} from '../../logic/spells/_Spell';
 import {WorldClient} from '../../logic/world/WorldClient';
 import {CharacterCalmState} from '../../logic/world/CharacterState';
 import {teams} from '../../constants';
+import {pointerLayer} from '../PointerLayer';
+import {tooltipLayer} from '../TooltipLayer';
+import {TooltippedIcons} from '../IconsRow';
+import {QueueRenderer} from '../QueueRenderer';
 
 
 const text: Text = [
@@ -52,6 +55,11 @@ export class GameFieldScene implements Scene {
 	selectedCharacter: Character | undefined;
 	selectedSpell: Spell | undefined;
 	animations = new Map<FieldNode, Animation[]>();
+	queueRenderer: QueueRenderer = new QueueRenderer(
+		(c) => {
+			this.selectedCharacter = c;
+		}
+	);
 
 
 	effectsRow = new TooltippedIcons(
@@ -76,6 +84,7 @@ export class GameFieldScene implements Scene {
 			this.spellIcons.load(),
 			this.spellAnimation.load(),
 			this.effectIcons.load(),
+			this.queueRenderer.load()
 		]);
 	}
 
@@ -88,6 +97,7 @@ export class GameFieldScene implements Scene {
 		this.spellIcons.destroy();
 		this.spellAnimation.destroy();
 		this.effectIcons.destroy();
+		this.queueRenderer.destroy();
 	}
 
 	buttonsRow1 = new ButtonRow(
@@ -244,6 +254,8 @@ export class GameFieldScene implements Scene {
 		if (this.selectedCharacter && this.selectedCharacter.hp <= 0) {
 			this.selectedCharacter = undefined;
 		}
+		pointerLayer.reset();
+		tooltipLayer.reset();
 	}
 
 	render() {
@@ -433,6 +445,7 @@ export class GameFieldScene implements Scene {
 	private drawUI() {
 		this.drawBottomPanel();
 		this.drawQueue();
+		tooltipLayer.draw();
 	}
 
 	private isSelectedCharActionable() {
@@ -446,10 +459,6 @@ export class GameFieldScene implements Scene {
 		if (this.isSelectedCharActionable()) {
 			this.buttonsRow2.draw();
 		}
-
-		this.buttonsRow1.renderTooltipLayer();
-		this.buttonsRow2.renderTooltipLayer();
-
 
 		const selected = this.selectedCharacter;
 		if (selected) {
@@ -519,16 +528,17 @@ export class GameFieldScene implements Scene {
 
 	private drawQueue() {
 		const queue = this.world.getTurnQueue();
-		queueRenderer.draw(queue);
+		this.queueRenderer.draw(queue);
 	}
 
 	update(
 		pressedKeyMap: Map<string, boolean>,
 		pointerEvent: PointerEvent
 	) {
-		this.buttonsRow1.update(pointerEvent);
-		this.buttonsRow2.update(pointerEvent);
-		this.effectsRow.update(pointerEvent);
+
+		pointerLayer.update(pointerEvent);
+		if (pointerEvent.cancelled) return;
+
 		this.pointer = pointerEvent.xy;
 		const hoveredNode = this.world.getNodes().find((node) =>
 			isPointInConvexShape(this.pointer.xy, node.points));
