@@ -1,4 +1,4 @@
 export const teams = {
-	ally: 'ally',
-	enemy: 'enemy',
+	ally: 'Ally',
+	enemy: 'Enemy',
 };

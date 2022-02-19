@@ -1,13 +1,13 @@
 import {Loadable} from './utils/Loadable';
 import {Destroyable} from './utils/Destroyable';
 import {TextureMap} from './TextureMap';
-import {frameRenderer, portraits, texturedShader} from '../SharedResources';
+import {portraits, texturedShader} from '../SharedResources';
 import {vec2} from './utils/Vector';
 import {fh} from '../GlobalContext';
 import {Character} from '../logic/Character';
 
 const wLeft = 8;
-const wMiddle = 26;
+const wMiddle = 18;
 const wRight = 8;
 const h = 26;
 
@@ -15,6 +15,8 @@ export class QueueRenderer implements Loadable, Destroyable {
 
 
 	panelParts = new TextureMap('ui/queue/queue');
+	bar = new TextureMap('ui/bar/bar');
+	team = new TextureMap('ui/team/team');
 
 	private oldWidth: number | undefined = undefined;
 
@@ -35,7 +37,7 @@ export class QueueRenderer implements Loadable, Destroyable {
 		;
 
 		const now = new Date().getTime();
-		const diff = 6 * (now - this.lastTime) / 1000;
+		const diff = 10 * (now - this.lastTime) / 1000;
 		this.lastTime = now;
 		const change = (value: number, target: number) => {
 			const d = (target - value);
@@ -46,7 +48,13 @@ export class QueueRenderer implements Loadable, Destroyable {
 		width = change(width, newWidth);
 		this.oldWidth = width;
 
-		texturedShader.setVec2('textureScale', vec2(width / 8, 1.0));
+		texturedShader.setSprite(this.panelParts, 'Left');
+		texturedShader.draw(
+			vec2(-width / 2, -fh / 2),
+			vec2(wLeft, h)
+		);
+
+		texturedShader.setVec2('textureScale', vec2((width - wLeft - wRight) / 8, 1.0));
 		texturedShader.setSprite(this.panelParts, 'Middle');
 		texturedShader.draw(
 			vec2(-width / 2 + wLeft, -fh / 2),
@@ -101,15 +109,42 @@ export class QueueRenderer implements Loadable, Destroyable {
 			this.charX.set(c, currentX);
 			this.charY.set(c, currentY);
 
+			const xx = Math.round(currentX + wMiddle / 2 - 8);
+			const yy = Math.round(-fh / 2 + 1 + currentY);
+
+			texturedShader.setSprite(
+				this.team,
+				c.team
+			);
+			texturedShader.draw(
+				vec2(xx, yy),
+				vec2(16, 16)
+			);
 
 			texturedShader.setSprite(portraits, c.type);
 			texturedShader.draw(
-				vec2(
-					Math.round(currentX + wMiddle / 2 - 8),
-					Math.round(-fh / 2 + 1 + currentY)
-				),
+				vec2(xx, yy),
 				vec2(16, 16)
 			);
+
+			if (!currentState) {
+				const yyy = Math.round(-fh / 2 + 18);
+				texturedShader.setSprite(this.bar, 'Black');
+				texturedShader.setVec2('textureScale', vec2(8.0, 1.0));
+				texturedShader.draw(
+					vec2(xx, yyy),
+					vec2(16, 1)
+				);
+				texturedShader.setSprite(this.bar, 'Green');
+				const w = Math.max(0, c.hp / c.maxHp);
+				texturedShader.setVec2('textureScale', vec2(w * 8, 1.0));
+				texturedShader.draw(
+					vec2(xx, yyy),
+					vec2(w * 16, 1)
+				);
+				texturedShader.setVec2('textureScale', vec2(1.0, 1.0));
+			}
+
 		}
 
 		deadChars.forEach((_, char) => {
@@ -134,8 +169,10 @@ export class QueueRenderer implements Loadable, Destroyable {
 			}
 		});
 
-		frameRenderer.renderFrame(
-			-width / 2 + 5, -fh / 2 - 10, 16, 20
+		texturedShader.setSprite(this.panelParts, 'Active');
+		texturedShader.draw(
+			vec2(-width / 2 + wRight + wMiddle / 2 - 4, -fh / 2),
+			vec2(wRight, h)
 		);
 
 
@@ -145,12 +182,16 @@ export class QueueRenderer implements Loadable, Destroyable {
 		return Promise.all(
 			[
 				this.panelParts.load(),
+				this.bar.load(),
+				this.team.load()
 			]
 		);
 	}
 
 	destroy() {
 		this.panelParts.destroy();
+		this.bar.destroy();
+		this.team.destroy();
 	}
 
 
