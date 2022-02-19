@@ -15,10 +15,6 @@ let tooltipToShow: Tooltip | undefined;
 
 export const tooltipLayer = {
 
-	reset: () => {
-		tooltipToShow = undefined;
-	},
-
 	registerTooltip: (tooltip: Tooltip) => {
 		pointerLayer.listen({
 			x: tooltip.x,
@@ -42,6 +38,7 @@ export const tooltipLayer = {
 				HorizontalAlign.LEFT
 			);
 		}
+		tooltipToShow = undefined;
 	}
 
 };

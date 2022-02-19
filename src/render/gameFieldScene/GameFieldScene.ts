@@ -255,7 +255,6 @@ export class GameFieldScene implements Scene {
 			this.selectedCharacter = undefined;
 		}
 		pointerLayer.reset();
-		tooltipLayer.reset();
 	}
 
 	render() {

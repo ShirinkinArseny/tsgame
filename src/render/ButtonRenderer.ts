@@ -5,6 +5,7 @@ import {buttonRenderer, defaultRect, fontRenderer, texturedShader} from '../Shar
 import {TextureMap} from './TextureMap';
 import {vec2, Vec4} from './utils/Vector';
 import {pointerLayer} from './PointerLayer';
+import {tooltipLayer} from './TooltipLayer';
 
 
 export interface AbstractButtonContent {
@@ -63,6 +64,13 @@ export class ButtonRow {
 					isDisabled
 				);
 			} else throw new Error('???');
+			tooltipLayer.registerTooltip({
+				x: xx + this.x,
+				y: this.y,
+				w: w,
+				h: buttonHeight,
+				tooltip: button.tooltip
+			});
 			pointerLayer.listen({
 				x: xx + this.x,
 				y: this.y,
