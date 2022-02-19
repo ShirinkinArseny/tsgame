@@ -327,6 +327,7 @@ export class WorldServer extends WorldCommon {
 	startNextTurn() {
 		const activeChar = this.turnQueue[0];
 		activeChar.movePoints = activeChar.movePointsPerTurn;
+		activeChar.actionPoints = activeChar.actionPointsPerTurn;
 		activeChar.effects.forEach(e => {
 			e.duration--;
 		});
