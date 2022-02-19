@@ -70,25 +70,61 @@
     "spriteSourceSize": { "x": 0, "y": 0, "w": 8, "h": 8 },
     "sourceSize": { "w": 8, "h": 8 },
     "duration": 100
+   },
+   "tooltip 9.aseprite": {
+    "frame": { "x": 72, "y": 0, "w": 8, "h": 8 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 8, "h": 8 },
+    "sourceSize": { "w": 8, "h": 8 },
+    "duration": 100
+   },
+   "tooltip 10.aseprite": {
+    "frame": { "x": 80, "y": 0, "w": 8, "h": 8 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 8, "h": 8 },
+    "sourceSize": { "w": 8, "h": 8 },
+    "duration": 100
+   },
+   "tooltip 11.aseprite": {
+    "frame": { "x": 88, "y": 0, "w": 8, "h": 8 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 8, "h": 8 },
+    "sourceSize": { "w": 8, "h": 8 },
+    "duration": 100
+   },
+   "tooltip 12.aseprite": {
+    "frame": { "x": 96, "y": 0, "w": 8, "h": 8 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 8, "h": 8 },
+    "sourceSize": { "w": 8, "h": 8 },
+    "duration": 100
    }
  },
  "meta": {
   "app": "http://www.aseprite.org/",
-  "version": "1.2.32-x64",
+  "version": "1.3-beta11-x64",
   "image": "tooltip.png",
   "format": "RGBA8888",
-  "size": { "w": 72, "h": 8 },
+  "size": { "w": 104, "h": 8 },
   "scale": "1",
   "frameTags": [
-   { "name": "LT", "from": 0, "to": 0, "direction": "forward" },
-   { "name": "L", "from": 1, "to": 1, "direction": "forward" },
-   { "name": "LB", "from": 2, "to": 2, "direction": "forward" },
-   { "name": "RT", "from": 3, "to": 3, "direction": "forward" },
-   { "name": "R", "from": 4, "to": 4, "direction": "forward" },
-   { "name": "RB", "from": 5, "to": 5, "direction": "forward" },
-   { "name": "T", "from": 6, "to": 6, "direction": "forward" },
-   { "name": "B", "from": 7, "to": 7, "direction": "forward" },
-   { "name": "M", "from": 8, "to": 8, "direction": "forward" }
+   { "name": "LT", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
+   { "name": "LTS", "from": 1, "to": 1, "direction": "forward", "color": "#000000ff" },
+   { "name": "L", "from": 2, "to": 2, "direction": "forward", "color": "#000000ff" },
+   { "name": "LB", "from": 3, "to": 3, "direction": "forward", "color": "#000000ff" },
+   { "name": "LBS", "from": 4, "to": 4, "direction": "forward", "color": "#000000ff" },
+   { "name": "RT", "from": 5, "to": 5, "direction": "forward", "color": "#000000ff" },
+   { "name": "RTS", "from": 6, "to": 6, "direction": "forward", "color": "#000000ff" },
+   { "name": "R", "from": 7, "to": 7, "direction": "forward", "color": "#000000ff" },
+   { "name": "RB", "from": 8, "to": 8, "direction": "forward", "color": "#000000ff" },
+   { "name": "RBS", "from": 9, "to": 9, "direction": "forward", "color": "#000000ff" },
+   { "name": "T", "from": 10, "to": 10, "direction": "forward", "color": "#000000ff" },
+   { "name": "B", "from": 11, "to": 11, "direction": "forward", "color": "#000000ff" },
+   { "name": "M", "from": 12, "to": 12, "direction": "forward", "color": "#000000ff" }
   ],
   "layers": [
    { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }

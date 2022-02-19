@@ -1,4 +1,4 @@
-import {HorizontalAlign, Text, VerticalAlign} from './FontRenderer';
+import {Text} from './FontRenderer';
 import {textboxRenderer} from '../SharedResources';
 import {pointerLayer} from './PointerLayer';
 
@@ -30,12 +30,11 @@ export const tooltipLayer = {
 	draw: () => {
 		if (tooltipToShow) {
 			textboxRenderer.renderTextBox(
-				tooltipToShow.x + tooltipToShow.w,
+				tooltipToShow.x,
 				tooltipToShow.y,
-				100,
+				tooltipToShow.w,
+				tooltipToShow.h,
 				tooltipToShow.tooltip,
-				VerticalAlign.BOTTOM,
-				HorizontalAlign.LEFT
 			);
 		}
 		tooltipToShow = undefined;

@@ -527,7 +527,7 @@ export class GameFieldScene implements Scene {
 
 	private drawQueue() {
 		const queue = this.world.getTurnQueue();
-		this.queueRenderer.draw(queue);
+		this.queueRenderer.draw(queue, this.selectedCharacter);
 	}
 
 	update(

@@ -6,6 +6,8 @@ import {vec2} from './utils/Vector';
 import {fh} from '../GlobalContext';
 import {Character} from '../logic/Character';
 import {pointerLayer} from './PointerLayer';
+import {tooltipLayer} from './TooltipLayer';
+import {FontStyle} from './FontRenderer';
 
 const wLeft = 8;
 const wMiddle = 18;
@@ -34,7 +36,8 @@ export class QueueRenderer implements Loadable, Destroyable {
 	private lastTime = new Date().getTime();
 
 	draw(
-		queue: Character[]
+		queue: Character[],
+		selected: Character | undefined
 	) {
 		texturedShader.useProgram();
 
@@ -118,6 +121,32 @@ export class QueueRenderer implements Loadable, Destroyable {
 			const xx = Math.round(currentX + wMiddle / 2 - 8);
 			const yy = Math.round(-fh / 2 + 1 + currentY);
 
+			tooltipLayer.registerTooltip({
+				x: xx,
+				y: yy,
+				w: 16,
+				h: 16,
+				tooltip: [
+					{
+						words: c.name.split(' ').map(w => ({
+							word: w,
+							fontStyle: FontStyle.BOLD
+						}))
+					},
+					{
+						words: ['❤ ' + c.hp + '/' + c.maxHp],
+						paddingBottom: 0
+					},
+					{
+						words: ['🕐 ' + c.actionPoints + '/' + c.actionPointsPerTurn],
+						paddingBottom: 0
+					},
+					{
+						words: ['🦶 ' + c.movePoints + '/' + c.movePointsPerTurn],
+						paddingBottom: 0
+					}
+				]
+			});
 			pointerLayer.listen({
 				x: xx,
 				y: yy,
@@ -131,6 +160,16 @@ export class QueueRenderer implements Loadable, Destroyable {
 				}
 			});
 
+			if (c === selected) {
+				texturedShader.setSprite(
+					this.team,
+					'Selected'
+				);
+				texturedShader.draw(
+					vec2(xx, yy),
+					vec2(16, 16)
+				);
+			}
 			texturedShader.setSprite(
 				this.team,
 				c.team
