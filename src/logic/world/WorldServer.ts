@@ -10,7 +10,9 @@ import {uuid} from '../../render/utils/ID';
 import {CharacterMotion, WorldCommon} from './WorldCommon';
 import {teams} from '../../constants';
 import {kick} from '../spells/Kick';
+import {move} from '../spells/Move';
 import {Effect} from '../effects/_Effect';
+import {endTurn} from '../spells/EndTurn';
 
 export class WorldServer extends WorldCommon {
 
@@ -56,7 +58,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: 11,
-				spells: [kick],
+				spells: [kick, move, endTurn],
 				team: teams.enemy,
 				movePoints: 5,
 				actionPoints: 5,
@@ -75,7 +77,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: 0,
-				spells: [kick],
+				spells: [kick, move, endTurn],
 				team: teams.enemy,
 				movePoints: 5,
 				actionPoints: 5,
@@ -94,7 +96,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: -4,
-				spells: [kick],
+				spells: [kick, move, endTurn],
 				team: teams.ally,
 				movePoints: 5,
 				actionPoints: 5,
@@ -113,7 +115,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: 11,
-				spells: [kick],
+				spells: [kick, move, endTurn],
 				team: teams.ally,
 				movePoints: 5,
 				actionPoints: 5,
@@ -132,7 +134,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: 0,
-				spells: [kick],
+				spells: [kick, move, endTurn],
 				team: teams.ally,
 				movePoints: 5,
 				actionPoints: 5,
@@ -151,7 +153,7 @@ export class WorldServer extends WorldCommon {
 				maxHp: 5,
 				moveTime: 400,
 				initiative: -4,
-				spells: [kick],
+				spells: [kick, move, endTurn],
 				team: teams.ally,
 				movePoints: 5,
 				actionPoints: 5,
