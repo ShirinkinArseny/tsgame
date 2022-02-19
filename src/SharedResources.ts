@@ -18,7 +18,6 @@ export let buttonRenderer!: ButtonRenderer;
 export let textboxRenderer!: TextboxRenderer;
 export let frameRenderer!: FrameRenderer;
 export let panelRenderer!: PanelRenderer;
-export let queueRenderer!: QueueRenderer;
 export let portraits!: TextureMap;
 
 export const loadSharedResources = () => {
@@ -31,7 +30,6 @@ export const loadSharedResources = () => {
 	textboxRenderer = new TextboxRenderer();
 	frameRenderer = new FrameRenderer('ui/frame/frame');
 	panelRenderer = new PanelRenderer();
-	queueRenderer = new QueueRenderer();
 	portraits = new TextureMap('characters/portraits/portraits');
 	return Promise.all([
 		texturedShader.load(),
@@ -42,7 +40,6 @@ export const loadSharedResources = () => {
 		textboxRenderer.load(),
 		frameRenderer.load(),
 		panelRenderer.load(),
-		queueRenderer.load(),
 		portraits.load()
 	]);
 };
