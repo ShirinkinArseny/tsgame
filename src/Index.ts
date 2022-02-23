@@ -14,6 +14,7 @@ import {FBO} from './render/textures/FBO';
 import {tryDetectError} from './render/utils/GL';
 import {teams} from './constants';
 import {initAI} from './logic/AI/AI';
+import {FontDemoScene} from './render/FontRenderer';
 
 let prevScene: Scene | undefined = undefined;
 let scene: Scene;
@@ -159,6 +160,7 @@ const render = () => {
 
 loadSharedResources().then(() => {
 	//scene = new FontDemoScene();
+
 	const serverSocket = new LocalServerSocket();
 	new WorldServer(serverSocket, '12345');
 	const clientSocket = serverSocket.newClient();
@@ -167,5 +169,6 @@ loadSharedResources().then(() => {
 	const worldAi = new WorldClient(aiSocket, '12345', teams.enemy);
 	initAI(worldAi, teams.enemy);
 	scene = new GameFieldScene(worldClient);
+
 	render();
 });

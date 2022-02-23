@@ -6,9 +6,11 @@ import {LoadableShader} from './shaders/LoadableShader';
 import {Loadable} from './utils/Loadable';
 import {range} from './utils/Lists';
 import {Vec2, vec2, vec4, Vec4} from './utils/Vector';
-import {defaultRect, fontRenderer} from '../SharedResources';
+import {coloredShader, defaultRect, fontRenderer} from '../SharedResources';
 import {Scene} from '../Scene';
 import {Colors, defaultColor} from './utils/Colors';
+import {error} from './utils/Errors';
+import {BorderedShape} from './shapes/BorderedShape';
 
 export enum FontStyle {
 	REGULAR, BOLD, SMALL, SMALL_ITALIC
@@ -87,6 +89,7 @@ export type Table = {
 	cells: Paragraph[][];
 	columns?: ColumnSettings[];
 	paddingBottom?: number;
+	borderColor?: Vec4;
 }
 
 export type Paragraph = {
@@ -100,6 +103,8 @@ export type Paragraph = {
 export const defaultKerning = 1;
 export const defaultLineHeight = 0;
 export const defaultPaddingBottom = 3;
+export const defaultCellPaddingBottom = 0;
+export const defaultBorderColor = vec4(0, 0, 0, 0);
 export const defaultAllowStretch = true;
 export const defaultAlign = HorizontalAlign.LEFT;
 
@@ -139,14 +144,11 @@ export class TableCellPosition {
 export class TableCellsPositions {
 	constructor(
 		readonly cells: TableCellPosition[][],
-		readonly paddingBottom: number
+		readonly width: number,
+		readonly height: number,
+		readonly paddingBottom: number = defaultPaddingBottom
 	) {
 	}
-
-	readonly width = this.cells[0].map(w => w.width).reduce((a, b) => a + b, 0);
-	readonly height = this.cells.map(w => w[0].height).reduce((a, b) => a + b, 0) + (
-		this.paddingBottom !== undefined ? this.paddingBottom : defaultPaddingBottom
-	);
 }
 
 export type TextElementPosition = ParagraphWordsPositions | TableCellsPositions;
@@ -170,6 +172,12 @@ export class FontRenderer implements Destroyable, Loadable {
 	private shader: LoadableShader = new LoadableShader('font');
 	lineHeight: number = 0;
 	private fontstyleLineHeight = new Map<FontStyle, number>();
+	private borderedRect = new BorderedShape([
+		vec2(0, 0),
+		vec2(1, 0),
+		vec2(1, 1),
+		vec2(0, 1)
+	]);
 
 	load() {
 		return Promise.all([
@@ -192,7 +200,7 @@ export class FontRenderer implements Destroyable, Loadable {
 								const char = v.char;
 								const bound = bounds[symbolIdx];
 								if (!bound) {
-									throw new Error('WTF? '+line);
+									throw new Error('WTF? ' + line);
 								}
 								const args = [
 									(bound[0]),
@@ -220,6 +228,7 @@ export class FontRenderer implements Destroyable, Loadable {
 			.flat(1)
 			.map(v => v[1]).forEach(r => r.destroy());
 		this.shader.destroy();
+		this.borderedRect.destroy();
 	}
 
 	private getSymbol(symbol: string, style: FontStyle) {
@@ -281,11 +290,6 @@ export class FontRenderer implements Destroyable, Loadable {
 		});
 	}
 
-	private initRenderingText() {
-		this.shader.useProgram();
-		this.shader.setTexture('texture', this.fontImage);
-	}
-
 	drawString(
 		text: string, x: number, y: number,
 		fontStyle: FontStyle = FontStyle.REGULAR,
@@ -295,8 +299,9 @@ export class FontRenderer implements Destroyable, Loadable {
 		shadowStyle: ShadowStyle = ShadowStyle.NO,
 		shadowColor: Vec4 = defaultTextShadowColor
 	) {
+		this.shader.useProgram();
+		this.shader.setTexture('texture', this.fontImage);
 		const yy = Math.floor(y);
-		this.initRenderingText();
 		this.shader.setVec4('color', shadowStyle === ShadowStyle.NO ? color : shadowColor);
 		if (shadowStyle !== ShadowStyle.NO) {
 			if (shadowStyle === ShadowStyle.DIAGONAL) {
@@ -372,7 +377,6 @@ export class FontRenderer implements Destroyable, Loadable {
 	): number {
 		const xx = Math.floor(x);
 		const yy = Math.floor(y);
-		this.initRenderingText();
 
 		let wordIndex = 0;
 		textPositions.lines.forEach(({positions, width}) => {
@@ -412,7 +416,7 @@ export class FontRenderer implements Destroyable, Loadable {
 
 	getTableCellsPositions(
 		table: Table,
-		w: number,
+		width: number,
 	): TableCellsPositions {
 		const positions = new Array<Array<TableCellPosition>>();
 		let yy = 0;
@@ -445,6 +449,7 @@ export class FontRenderer implements Destroyable, Loadable {
 		const dymamicSizes = columnsSizes.map((s, idx) =>
 			isColumnStretchable(idx) ? s : 0
 		).reduce((a, b) => a + b);
+		const w = width - table.cells[0].length * 4;
 		const redistribute = w - fixedSizes;
 		columnsSizes.forEach((v, idx) => {
 			if (isColumnStretchable(idx)) {
@@ -465,16 +470,28 @@ export class FontRenderer implements Destroyable, Loadable {
 				l.push(new TableCellPosition(
 					vec2(xx, yy),
 					cellWidth,
-					paragraphSize.height + (cell.paddingBottom !== undefined ? cell.paddingBottom : defaultPaddingBottom),
+					paragraphSize.height,
 					paragraphSize
 				));
-				maxCellHeight = Math.max(paragraphSize.height, maxCellHeight);
-				xx += cellWidth;
+				const cellPaddingBottom = cell.paddingBottom === undefined ? defaultCellPaddingBottom : cell.paddingBottom;
+				maxCellHeight = Math.max(paragraphSize.height, maxCellHeight + cellPaddingBottom);
+				xx += cellWidth + 4;
 			});
-			positions.push(l);
-			yy += maxCellHeight;
+			positions.push(l.map(p => new TableCellPosition(
+				p.position,
+				p.width,
+				maxCellHeight,
+				p.paragraphPositions
+			)));
+			yy += maxCellHeight + 1;
 		});
-		return new TableCellsPositions(positions, (table.paddingBottom !== undefined ? table.paddingBottom : defaultPaddingBottom));
+		const paddingBottom = table.paddingBottom !== undefined ? table.paddingBottom : defaultPaddingBottom;
+		return new TableCellsPositions(
+			positions,
+			width,
+			yy + 1 + paddingBottom,
+			paddingBottom
+		);
 	}
 
 	drawTableImpl(
@@ -482,9 +499,30 @@ export class FontRenderer implements Destroyable, Loadable {
 		x: number, y: number,
 		positions: TableCellsPositions
 	): number {
+		coloredShader.useProgram();
+		coloredShader.setVec4('fillColor', table.borderColor || defaultBorderColor);
+		coloredShader.setNumber('borderWidth', 0);
+		coloredShader.setModel('vertexPosition', this.borderedRect);
+		coloredShader.draw(vec2(x, y), vec2(positions.width, positions.height - positions.paddingBottom));
+		coloredShader.setVec4('fillColor', vec4(1, 1, 1, 1));
+
 		table.cells.forEach((line, lineIdx) => line.forEach((cell, cellIdx) => {
-			const px = Math.round(x + positions.cells[lineIdx][cellIdx].position.x);
-			const py = Math.round(y + positions.cells[lineIdx][cellIdx].position.y);
+			const pos = positions.cells[lineIdx][cellIdx];
+			const px = Math.round(x + pos.position.x + 1);
+			const py = Math.round(y + pos.position.y + 1);
+			let dw = 3;
+			if (cellIdx + 1 === line.length) {
+				dw--;
+			}
+			coloredShader.draw(vec2(px, py), vec2(pos.width + dw, pos.height));
+		}));
+
+		this.shader.useProgram();
+		this.shader.setTexture('texture', this.fontImage);
+		table.cells.forEach((line, lineIdx) => line.forEach((cell, cellIdx) => {
+			const pos = positions.cells[lineIdx][cellIdx].position;
+			const px = Math.round(x + pos.x + 2);
+			const py = Math.round(y + pos.y + 2);
 			this.drawParagraphImpl(
 				cell,
 				px,
@@ -528,6 +566,8 @@ export class FontRenderer implements Destroyable, Loadable {
 		x: number, y: number, w: number,
 		positions: TextElementsPositions
 	) {
+		this.shader.useProgram();
+		this.shader.setTexture('texture', this.fontImage);
 		const xx = Math.floor(x);
 		let yy = Math.floor(y);
 		text.forEach((e, idx) => {
@@ -600,7 +640,8 @@ const text: Text = [
 				{words: ['Dolor']},
 				{words: ['N/A'], align: HorizontalAlign.RIGHT},
 			]
-		]
+		],
+		borderColor: vec4(0, 0, 0, 1)
 	},
 	{
 		words: 'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source.'.split(' ').map(w => ({

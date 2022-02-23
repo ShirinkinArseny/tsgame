@@ -6,7 +6,6 @@ import {TextboxRenderer} from './render/TextboxRenderer';
 import {FrameRenderer} from './render/FrameRenderer';
 import {PanelRenderer} from './render/PanelRenderer';
 import {TexturedShader} from './render/shaders/TexturedShader';
-import {QueueRenderer} from './render/QueueRenderer';
 import {TextureMap} from './render/TextureMap';
 
 export let defaultRect!: Rect;
